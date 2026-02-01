@@ -8,7 +8,7 @@ from brain import process_command
 from muscles import execute_command, capture_webcam
 import memory
 
-# --- CONFIGURATION ---
+
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
@@ -18,7 +18,7 @@ if not TOKEN:
 
 ALLOWED_USERS = [] 
 
-# --- GLOBAL STATE FOR CAMERA ---
+
 CAMERA_ACTIVE = False
 
 logging.basicConfig(
@@ -26,7 +26,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# --- KEYBOARD LAYOUT ---
+
 def get_main_keyboard():
     keyboard = [
         [KeyboardButton("/screenshot"), KeyboardButton("/sleep")],
@@ -35,7 +35,6 @@ def get_main_keyboard():
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-# --- CAMERA LOOP ---
 async def camera_monitor_loop(bot, chat_id):
     global CAMERA_ACTIVE
     status_msg = await bot.send_message(chat_id, "🔴 Live Feed Started...")
@@ -51,7 +50,7 @@ async def camera_monitor_loop(bot, chat_id):
     
     await bot.send_message(chat_id, "xxxx Camera Feed Stopped.")
 
-# --- START COMMAND ---
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
     await update.message.reply_text(
@@ -59,7 +58,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=get_main_keyboard()
     )
 
-# --- MAIN HANDLER ---
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CAMERA_ACTIVE
     user_text = update.message.text
@@ -69,10 +67,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     print(f"\n📩 Message from @{sender}: {user_text}")
 
-    # 1. Show "Typing..." status
+  
     await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
-    # 2. INSTANT OVERRIDES (Bypass AI entirely for speed)
+  
     command_json = None
     
     if "/battery" in lower_text or "battery" in lower_text:
@@ -88,26 +86,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif "/camera_off" in lower_text:
         command_json = {"action": "camera_stream", "value": "off"}
 
-    # 3. If no override, ask the Brain (AI)
-    # We send a temporary status message
+ 
     status_msg = await update.message.reply_text("⚡ Thinking...", reply_markup=get_main_keyboard())
 
     if not command_json:
         loop = asyncio.get_running_loop()
         try:
-            # Run AI in a separate thread
+       
             command_json = await loop.run_in_executor(None, process_command, user_text)
         except Exception as e:
-            # Safe Error Handling
+          
             await status_msg.delete()
             await update.message.reply_text(f"❌ Brain Error: {e}", reply_markup=get_main_keyboard())
             return
 
-    # 4. EXECUTE THE ACTION
+
     if command_json:
         action = command_json.get('action')
         
-        # --- Physical Actions ---
+    
         if action == "check_battery":
             status = execute_command(command_json)
             await status_msg.delete()
@@ -119,7 +116,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(report, reply_markup=get_main_keyboard())
             
         elif action == "take_screenshot":
-            # Just update text to "Uploading" before sending photo
+           
             await status_msg.delete()
             loader = await update.message.reply_text("📸 Capture...", reply_markup=get_main_keyboard())
             path = execute_command(command_json)
@@ -147,7 +144,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         elif action == "general_chat":
             response = command_json.get('response', "...")
-            # SAFE REPLY: Delete old status, send new message
+           
             await status_msg.delete()
             await update.message.reply_text(f"💬 {response}", reply_markup=get_main_keyboard())
             
@@ -178,7 +175,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                  await update.message.reply_text("❌ File not found.", reply_markup=get_main_keyboard())
 
         else:
-            # Handle apps, urls
+          
             try:
                 execute_command(command_json)
                 await status_msg.delete()
