@@ -11,5 +11,6 @@ env/
 
 # User Data (Don't upload your memory or photos)
 long_term_memory.json
+clipboard_history.json
 *.jpg
 *.png
