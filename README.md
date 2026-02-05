@@ -170,6 +170,7 @@ Create a `.env` file:
 
 ```env
 TELEGRAM_TOKEN=your_bot_token_here
+ALLOWED_TELEGRAM_USERNAME=your_telegram_username
 MODEL_NAME=qwen2.5-coder:7b
 LOG_LEVEL=INFO
 ```

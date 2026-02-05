@@ -14,11 +14,37 @@ import file_tracker  # <--- NEW IMPORT: THIS STARTS THE FILE TRACKER AUTOMATICAL
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
+ALLOWED_USERNAME = os.getenv("ALLOWED_TELEGRAM_USERNAME")
+
 if not TOKEN:
     print("❌ Error: TELEGRAM_TOKEN not found in .env file.")
     exit()
 
-ALLOWED_USERS = [] 
+if not ALLOWED_USERNAME:
+    print("⚠️ Warning: ALLOWED_TELEGRAM_USERNAME not found in .env file. Bot will be open to everyone!")
+    ALLOWED_USERS = []
+else:
+    ALLOWED_USERS = [ALLOWED_USERNAME]
+    print(f"🔒 Security: Only accepting commands from @{ALLOWED_USERNAME}")
+
+CAMERA_ACTIVE = False
+
+# Security Decorator
+from functools import wraps
+
+def auth_required(func):
+    @wraps(func)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        user = update.effective_user
+        if not user or (ALLOWED_USERS and user.username not in ALLOWED_USERS):
+            print(f"⛔ Unauthorized access attempt from: @{user.username if user else 'Unknown'} (ID: {user.id if user else 'Unknown'})")
+            if update.message:
+                await update.message.reply_text("⛔ Unauthorized access.")
+            elif update.callback_query:
+                await update.callback_query.answer("⛔ Unauthorized access.", show_alert=True)
+            return
+        return await func(update, context, *args, **kwargs)
+    return wrapper
 
 CAMERA_ACTIVE = False
 
@@ -47,6 +73,7 @@ async def safe_send_action(bot, chat_id, action):
     except Exception as e:
         print(f"⚠️ Network Warning: Could not send chat action: {e}")
 
+@auth_required
 async def handle_clipboard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle inline button callbacks for clipboard items"""
     query = update.callback_query
@@ -101,6 +128,7 @@ async def camera_monitor_loop(bot, chat_id):
     except: pass
 
 
+@auth_required
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
     await update.message.reply_text(
@@ -108,6 +136,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=get_main_keyboard()
     )
 
+@auth_required
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CAMERA_ACTIVE
     user_text = update.message.text

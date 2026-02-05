@@ -1,0 +1,37 @@
+{
+    "manifest_version": 3,
+    "name": "Pikachu Activity Monitor (Firefox)",
+    "version": "1.0.0",
+    "description": "Monitors browser tabs for Pikachu Desktop Assistant",
+    "permissions": [
+        "tabs",
+        "nativeMessaging"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon16.png",
+            "48": "icon48.png",
+            "128": "icon128.png"
+        }
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "pikachu@assistant.local",
+            "strict_min_version": "109.0"
+        }
+    },
+    "icons": {
+        "16": "icon16.png",
+        "48": "icon48.png",
+        "128": "icon128.png"
+    }
+}
