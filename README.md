@@ -150,8 +150,8 @@ ZYRON isn't just another assistant - it's your personal AI that lives entirely o
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/zyron-assistant.git
-cd zyron-assistant
+git clone https://github.com/Surajkumar5050/pikachu-assistant.git
+cd pikachu-assistant
 
 # 2. Run the automated installer
 setup.bat
