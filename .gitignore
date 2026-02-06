@@ -14,6 +14,7 @@ venv/
 env/
 
 # User Data (Don't upload your memory or photos)
+blacklist.json
 long_term_memory.json
 clipboard_history.json
 file_activity_log.json

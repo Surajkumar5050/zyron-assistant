@@ -36,24 +36,25 @@ def poll_command_queue():
             if COMMAND_FILE_PATH.exists():
                 try:
                     with open(COMMAND_FILE_PATH, 'r') as f:
-                        command_data = json.load(f)
-                    
-                    # Send to Firefox
-                    if command_data:
-                        send_message(command_data)
+                        commands = json.load(f)
                     
                     # Clear the file after reading
                     os.remove(COMMAND_FILE_PATH)
                     
+                    # Process commands
+                    if isinstance(commands, list):
+                        for cmd in commands:
+                            if cmd:
+                                send_message(cmd)
+                    elif isinstance(commands, dict):
+                        send_message(commands)
+                    
                 except json.JSONDecodeError:
-                    # File might be being written to, just skip this beat
                     pass
                 except Exception as e:
-                    # Log error but don't crash thread
                     pass
             
             time.sleep(0.5) # Check every 500ms
-            
         except Exception:
             time.sleep(1)
 

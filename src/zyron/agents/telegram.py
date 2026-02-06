@@ -10,6 +10,7 @@ import zyron.core.memory as memory
 import zyron.features.activity as activity_monitor  # Needed to format the output text
 import zyron.features.clipboard as clipboard_monitor  # For clipboard history
 import zyron.features.files.tracker as file_tracker  # <--- NEW IMPORT: THIS STARTS THE FILE TRACKER AUTOMATICALLY
+import zyron.features.focus_mode as focus_mode # <--- Feature #11: Focus Mode
 
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -62,7 +63,8 @@ def get_main_keyboard():
         [KeyboardButton("/batterypercentage"), KeyboardButton("/systemhealth")],
         [KeyboardButton("/location"), KeyboardButton("/recordaudio")],
         [KeyboardButton("/clear_bin"), KeyboardButton("/storage")], 
-        [KeyboardButton("/activities"), KeyboardButton("/copied_texts")] # <--- ADDED NEW BUTTON
+        [KeyboardButton("/activities"), KeyboardButton("/copied_texts")],
+        [KeyboardButton("/focus_mode_on"), KeyboardButton("/blacklist")] # <--- NEW FOCUS MODE BUTTONS
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -178,6 +180,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # --- NEW CLIPBOARD TRIGGER ---
     elif "/copied_texts" in lower_text or any(x in lower_text for x in ["copied texts", "clipboard history", "what did i copy", "show copied"]):
         command_json = {"action": "get_clipboard_history"}
+
+    # --- FEATURE #11: FOCUS MODE COMMANDS ---
+    elif "/focus_mode_on" in lower_text or "focus on" in lower_text:
+        command_json = {"action": "focus_mode", "sub_action": "on"}
+    elif "/focus_mode_off" in lower_text or "focus off" in lower_text:
+        command_json = {"action": "focus_mode", "sub_action": "off"}
+    elif "/blacklist" in lower_text:
+        # Check for arguments: /blacklist add steam discord
+        parts = lower_text.split()
+        if len(parts) >= 3:
+            sub_action = parts[1]
+            items = parts[2:] # Capture all remaining parts
+            if sub_action == "add":
+                command_json = {"action": "focus_mode", "sub_action": "add", "items": items}
+            elif sub_action == "remove":
+                command_json = {"action": "focus_mode", "sub_action": "remove", "items": items}
+            else:
+                command_json = {"action": "focus_mode", "sub_action": "status"}
+        else:
+            command_json = {"action": "focus_mode", "sub_action": "status"}
 
     # Show processing message (with error handling)
     status_msg = None
@@ -554,6 +576,41 @@ Longitude: {location_data['longitude']}
                 print(f"Find file error: {e}")
                 await search_msg.edit_text(f"❌ Search error: {e}", reply_markup=get_main_keyboard())
         # ---------------------------------------------------------
+
+        # --- FEATURE #11: FOCUS MODE HANDLERS ---
+        elif action == "focus_mode":
+            sub_action = command_json.get("sub_action")
+            
+            if sub_action == "on":
+                result = focus_mode.start_focus_mode()
+                await update.message.reply_text(result, reply_markup=get_main_keyboard(), parse_mode='Markdown')
+                
+            elif sub_action == "off":
+                result = focus_mode.stop_focus_mode()
+                await update.message.reply_text(result, reply_markup=get_main_keyboard(), parse_mode='Markdown')
+                
+            elif sub_action == "status":
+                result = focus_mode.get_blacklist_status()
+                await update.message.reply_text(result, reply_markup=get_main_keyboard(), parse_mode='Markdown')
+                
+            elif sub_action == "add":
+                items = command_json.get("items")
+                if items:
+                    results = []
+                    for item in items:
+                        results.append(focus_mode.add_to_blacklist(item))
+                    await update.message.reply_text("\n".join(results), reply_markup=get_main_keyboard())
+                else:
+                    await update.message.reply_text("❌ Please specify app(s) or site(s) to block.\nUsage: `/blacklist add spotify steam youtube.com`", reply_markup=get_main_keyboard())
+
+            elif sub_action == "remove":
+                items = command_json.get("items")
+                if items:
+                    result = focus_mode.remove_from_blacklist(items)
+                    await update.message.reply_text(result, reply_markup=get_main_keyboard())
+                else:
+                    await update.message.reply_text("❌ Please specify item(s) to remove.", reply_markup=get_main_keyboard())
+        # ----------------------------------------
 
         # --- BROWSER CONTROL (Smart Tab Management) ---
         elif action == "browser_control":

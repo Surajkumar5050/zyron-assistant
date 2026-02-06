@@ -6,6 +6,7 @@ import sqlite3
 import shutil
 from collections import defaultdict
 from pathlib import Path
+import time
 
 try:
     import win32gui
@@ -234,15 +235,21 @@ def get_firefox_tabs():
     temp_path = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_tabs.json'
     if temp_path.exists():
         try:
-            # Check if file is recent (less than 2 minutes old)
-            import time
-            if time.time() - temp_path.stat().st_mtime < 120:
+            mtime = temp_path.stat().st_mtime
+            age = time.time() - mtime
+            # Data must be newer than 5 seconds for real-time Focus Mode
+            if age < 5:
                 with open(temp_path, 'r') as f:
                     tabs = json.load(f)
                 if tabs:
-                    # Rename keys to match expected format if needed
-                    # (Native bridge already sends title/url)
                     return tabs
+            elif age > 60:
+                # Remove stale data to prevent enforcer acting on zombies
+                try:
+                    os.remove(temp_path)
+                    print(f"🧹 Cleared stale Firefox tab data ({int(age)}s old)")
+                except:
+                    pass
         except Exception as e:
             print(f"Error reading Firefox Native Bridge data: {e}")
 

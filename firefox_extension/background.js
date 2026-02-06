@@ -107,8 +107,8 @@ async function sendTabsToHost() {
   }
 }
 
-// Update every 30 seconds
-setInterval(sendTabsToHost, 30000);
+// Update every 2 seconds for real-time Focus Mode support
+setInterval(sendTabsToHost, 2000);
 // Also update on tab events
 chrome.tabs.onUpdated.addListener(sendTabsToHost);
 chrome.tabs.onRemoved.addListener(sendTabsToHost);

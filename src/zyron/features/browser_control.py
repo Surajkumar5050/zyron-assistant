@@ -6,20 +6,30 @@ COMMAND_FILE_PATH = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_commands.j
 
 def send_browser_command(action, **kwargs):
     """
-    Writes a command to the Firefox Native Host communication file.
-    Args:
-        action (str): The action to perform (close_tab, mute_tab, media_control, etc)
-        **kwargs: Additional arguments for the command
+    Appends a command to the Firefox Native Host communication list.
     """
     command = {"action": action}
     command.update(kwargs)
     
     try:
-        # We overwrite the file - simple queue of depth 1 for now is sufficient
-        # In a high-concurrency scenario, we'd append to a list
+        commands = []
+        if COMMAND_FILE_PATH.exists():
+            try:
+                with open(COMMAND_FILE_PATH, 'r') as f:
+                    content = f.read().strip()
+                    if content:
+                        commands = json.loads(content)
+                        if not isinstance(commands, list):
+                            commands = [commands]
+            except:
+                commands = []
+        
+        commands.append(command)
+        
         with open(COMMAND_FILE_PATH, 'w') as f:
-            json.dump(command, f)
-        print(f"⚡ Browser Command Queued: {action} -> {kwargs}")
+            json.dump(commands, f)
+        
+        print(f"⚡ Browser Command Queued: {action} (Queue Size: {len(commands)})")
         return True
     except Exception as e:
         print(f"❌ Failed to queue browser command: {e}")
