@@ -8,15 +8,15 @@ engine.setProperty('rate', 170)
 
 # --- CONFIGURATION ---
 try:
-from .wake_word import WakeWordEngine
+    # Indent everything inside the 'try' block
+    from .wake_word import WakeWordEngine
     wake_engine = WakeWordEngine()
     HAS_OFFLINE_WAKE = True
+
 except Exception as e:
+    # This block runs only if the code above fails
     print(f"⚠️ Offline Wake Engine missing: {e}")
-    HAS_OFFLINE_WAKE = True
-except Exception as e:
-    print(f"⚠️ Offline Wake Engine missing: {e}")
-    HAS_OFFLINE_WAKE = False
+    HAS_OFFLINE_WAKE = False  # Set to False because it failed
 
 # Load Offline Mode Config
 import os
