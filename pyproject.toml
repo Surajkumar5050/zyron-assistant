@@ -40,6 +40,9 @@ dependencies = [
     "ollama",
     "vosk",
     "sounddevice",
+    "python-dotenv",
+    "screen-brightness-control",
+    "scipy",
 ]
 
 [project.scripts]

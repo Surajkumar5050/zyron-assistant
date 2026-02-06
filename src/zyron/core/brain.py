@@ -63,9 +63,13 @@ COMMANDS:
 
 16. Chat:  {"action": "general_chat", "response": "text"}
 
+17. Browser Control: {"action": "browser_control", "command": "close/mute", "query": "which tab"}
+    (Triggers: "close youtube tab", "mute spotify", "close the video about AI")
+
 *** CRITICAL RULE: CONTEXT AWARENESS ***
 Use the [CURRENT CONTEXT STATE] below to resolve words like "it", "that", "the app", "the folder".
-- If user says "Close it" and Last App Opened is "Chrome" -> Close Chrome.
+- If user says "Close it" and Last Focused Tab is "YouTube" -> {"action": "browser_control", "command": "close", "query": "YouTube"} (PRIORITY over close_app)
+- If user says "Close it" and Last App Opened is "Chrome" -> {"action": "close_app", "app_name": "Chrome"}
 """
 
 def process_command(user_input):
@@ -106,7 +110,7 @@ def process_command(user_input):
         # 2. Force Sleep/Screenshot/Battery
         elif "/sleep" in lower: 
             data = {"action": "system_sleep"}
-        elif "/screenshot" in lower or "screenshot" in lower: 
+        elif ("/screenshot" in lower or "screenshot" in lower) and not ("tab" in lower or "browser" in lower): 
             data = {"action": "take_screenshot"}
         elif "battery" in lower: 
             data = {"action": "check_battery"}
@@ -141,7 +145,25 @@ def process_command(user_input):
         elif any(x in lower for x in ["/copied_texts", "copied texts", "clipboard history", "clipboard", "what did i copy", "show copied", "give me copied texts"]):
             data = {"action": "get_clipboard_history"}
 
-        # 10. Force Find File (Context-Aware File Finder)
+        # 10. Browser Control (NEW)
+        # "Close the youtube tab", "Mute the music"
+        elif "close" in lower and ("tab" in lower or "video" in lower):
+            # We need to find the TAB ID first. This logic is usually in main.py or telegram.py
+            # But the Brain just decides the INTENT.
+            # We will return a "browser_action" command and let the Agent resolve the specific tab ID
+            data = {"action": "browser_control", "command": "close", "query": user_input}
+            
+        elif ("mute" in lower or "silence" in lower) and ("tab" in lower or "video" in lower or "music" in lower):
+            data = {"action": "browser_control", "command": "mute", "query": user_input}
+            
+        elif ("play" in lower or "pause" in lower or "resume" in lower or "video" in lower) and ("music" in lower or "video" in lower or "youtube" in lower):
+            command = "play" if "play" in lower or "resume" in lower else "pause"
+            data = {"action": "browser_control", "command": command, "query": user_input}
+
+        elif "screenshot" in lower and ("tab" in lower or "browser" in lower or "page" in lower):
+            data = {"action": "browser_control", "command": "screenshot", "query": user_input}
+
+        # 11. Force Find File (Context-Aware File Finder)
         # Detect file finding queries - "find that", "get me that", "send that", "that file", etc.
         find_triggers = ["find that", "get that", "send that", "give me that", "that file", "that pdf", "that document", "that excel", "that image", "that video", "i was reading", "i opened", "i was working on", "file i", "document i"]
         if any(trigger in lower for trigger in find_triggers):

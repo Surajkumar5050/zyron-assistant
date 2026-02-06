@@ -342,25 +342,29 @@ Just describe what you're looking for:
 
 ## Advanced Setup
 
-### Browser Activity Monitoring
+### Browser Activity Monitoring (Advanced)
 
-For complete browser tab tracking with URLs:
+For the full experience (Screenshots, Tab Control, Media Control):
 
-1. Navigate to your browser's extension page:
-   - Chrome: `chrome://extensions`
-   - Brave: `brave://extensions`
-   - Edge: `edge://extensions`
-   - Firefox: `about:debugging#/runtime/this-firefox`
+1.  **Register the Native Host**:
+    ```bash
+    python src/zyron/scripts/register_native_host.py
+    ```
+    *(This connects Zyron directly to Firefox securely on your machine)*
 
-2. Enable "Developer mode" (or "Load Temporary Add-on" for Firefox)
+2.  **Load the Extension**:
+    - **Firefox**: `about:debugging` -> "This Firefox" -> "Load Temporary Add-on" -> Select `firefox_extension/manifest.json`.
+    - **Chrome**: Coming soon!
 
-3. Click "Load unpacked" (Chrome) or "Load Temporary Add-on" (Firefox) and select:
-   - Chrome/Edge: `browser_extension/manifest.json`
-   - Firefox: `firefox_extension/manifest.json`
+Now Zyron (v1.4) can "see" and "control" your browser in real-time.
 
-4. Pin the extension to your toolbar
+---
 
-Now ZYRON can see your active tabs and URLs in real-time!
+### Advanced Browser Control (New v1.4) 🦊
+- **Smart Logic** - "Close it" knows you mean the YouTube tab you just watched.
+- **Ranked Matching** - "Mute Spotify" finds the exact tab instantly.
+- **Media Control** - Play/Pause/Next directly from Telegram (no need to open the tab).
+- **Tab Capture** - High-quality screenshots of specific tabs (background capture supported).
 
 ---
 

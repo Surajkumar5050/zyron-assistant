@@ -3,7 +3,11 @@
 
 # Python junk
 __pycache__/
-*.pyc
+*.png
+
+# Generated Native Host Files (Machine Specific)
+src/zyron/core/zyron_native_host.json
+zyron_host.bat
 
 # Virtual Environment (Too big to upload)
 venv/

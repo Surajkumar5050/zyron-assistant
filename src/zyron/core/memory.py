@@ -7,6 +7,7 @@ MEMORY_FILE = "long_term_memory.json"
 short_term = {
     "last_app_opened": None,
     "last_browser_used": "default",
+    "last_focused_tab": None,
     "last_file_path": None,
     "last_action_type": None
 }
@@ -35,6 +36,8 @@ def update_context(action_type, target=None):
         short_term["last_browser_used"] = target
     elif action_type == "send_file" or action_type == "list_files":
         short_term["last_file_path"] = target
+    elif action_type == "browser_interaction":
+        short_term["last_focused_tab"] = target
 
 def get_context_string():
     """Returns a summary of BOTH Short-Term and Long-Term memory."""
@@ -42,9 +45,10 @@ def get_context_string():
     
     return f"""
     [CURRENT CONTEXT STATE]
-    - KNOWN USER INFO: {long_term_data}  <-- THIS WAS MISSING
+    - KNOWN USER INFO: {long_term_data}
     - Last App Opened: {short_term['last_app_opened']}
     - Last Browser Used: {short_term['last_browser_used']}
+    - Last Focused Tab: {short_term['last_focused_tab']}
     - Last File/Folder: {short_term['last_file_path']}
     """
 

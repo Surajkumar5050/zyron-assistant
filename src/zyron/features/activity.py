@@ -227,9 +227,25 @@ def get_edge_tabs():
 
 
 def get_firefox_tabs():
-    """Get Firefox tabs using PowerShell and Places database"""
+    """Get Firefox tabs using Native Bridge (temp JSON) or fall back to Places database"""
     tabs = []
     
+    # Try Native Bridge first (Real-time data)
+    temp_path = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_tabs.json'
+    if temp_path.exists():
+        try:
+            # Check if file is recent (less than 2 minutes old)
+            import time
+            if time.time() - temp_path.stat().st_mtime < 120:
+                with open(temp_path, 'r') as f:
+                    tabs = json.load(f)
+                if tabs:
+                    # Rename keys to match expected format if needed
+                    # (Native bridge already sends title/url)
+                    return tabs
+        except Exception as e:
+            print(f"Error reading Firefox Native Bridge data: {e}")
+
     try:
         # Firefox profiles path
         firefox_path = os.path.join(

@@ -5,7 +5,8 @@
     "description": "Monitors browser tabs for Zyron Desktop Assistant",
     "permissions": [
         "tabs",
-        "nativeMessaging"
+        "nativeMessaging",
+        "scripting"
     ],
     "host_permissions": [
         "<all_urls>"
