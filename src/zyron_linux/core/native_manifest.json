@@ -1,0 +1,9 @@
+{
+    "name": "zyron.native.host",
+    "description": "Zyron Assistant Native Messaging Host",
+    "path": "ZYRON_HOST_PATH",
+    "type": "stdio",
+    "allowed_extensions": [
+        "zyron@assistant.local"
+    ]
+}
