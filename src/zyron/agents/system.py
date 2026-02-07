@@ -7,12 +7,12 @@ import psutil
 import shutil
 import sounddevice as sd
 from scipy.io.wavfile import write
+import numpy as np
 import requests
+import json
 import zyron.features.activity as activity_monitor
 import zyron.features.clipboard as clipboard_monitor
 import zyron.features.files.finder as file_finder  # Uses the new smart finder we just created
-from src.zyron.utils import settings
-from datetime import datetime
 
 PROCESS_NAMES = {
     # Browsers
@@ -214,7 +214,7 @@ def capture_webcam():
             if cam.isOpened():
                 ret, frame = cam.read()
                 if ret:
-                    file_path = os.path.join(os.getcwd(), f"{settings.MEDIA_PATH}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_webcam_snap.jpg")
+                    file_path = os.path.join(os.getcwd(), "webcam_snap.jpg")
                     cv2.imwrite(file_path, frame)
                     cam.release()
                     return file_path
@@ -227,7 +227,7 @@ def capture_webcam():
 
 
 def capture_screen():
-    file_path = os.path.join(os.getcwd(), f"{settings.MEDIA_PATH}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_screenshot.png")
+    file_path = os.path.join(os.getcwd(), "screenshot.png")
     try:
         print("📸 Taking screenshot...")
         screenshot = pyautogui.screenshot()
@@ -241,7 +241,7 @@ def capture_screen():
 def record_audio(duration=10):
     """Records audio from the default microphone for specified duration (in seconds).
     Uses sounddevice library - Works on Windows Python 3.10 without C++ compiler!"""
-    file_path = os.path.join(os.getcwd(), f"{settings.MEDIA_PATH}/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_audio_recording.wav")
+    file_path = os.path.join(os.getcwd(), "audio_recording.wav")
     
     # Audio recording parameters
     SAMPLE_RATE = 44100 

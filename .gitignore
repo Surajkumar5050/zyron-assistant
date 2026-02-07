@@ -21,6 +21,3 @@ file_activity_log.json
 audio_recording.wav
 *.jpg
 *.png
-
-# Media
-saved_media/
