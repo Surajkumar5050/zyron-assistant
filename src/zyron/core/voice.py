@@ -1,6 +1,6 @@
 import speech_recognition as sr
 import pyttsx3
-
+from src.zyron.utils import settings
 # Initialize
 recognizer = sr.Recognizer()
 engine = pyttsx3.init()
@@ -18,9 +18,6 @@ except Exception as e:
     print(f"⚠️ Offline Wake Engine missing: {e}")
     HAS_OFFLINE_WAKE = False  # Set to False because it failed
 
-# Load Offline Mode Config
-import os
-OFFLINE_MODE = os.getenv("OFFLINE_MODE", "false").lower() == "true"
 
 # We accept variations because Google sometimes mishears "Pikachu"
 WAKE_WORDS = ["pikachu", "pika", "peek a", "pick a", "picacho", "hey you"]
@@ -94,7 +91,7 @@ def take_user_input():
             audio_data = sr.AudioData(raw_audio, sample_rate, 2) # 2 bytes per sample (int16)
             
             # 3. SELECT MODE: Offline vs Online
-            if OFFLINE_MODE:
+            if settings.OFFLINE_MODE:
                 print("   -> Processing Offline (Vosk)...")
                 query = wake_engine.capture_command(timeout=5)
                 print(f"   -> Command received: {query}")

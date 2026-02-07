@@ -43,6 +43,8 @@ dependencies = [
     "python-dotenv",
     "screen-brightness-control",
     "scipy",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0"
 ]
 
 [project.scripts]
