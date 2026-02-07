@@ -6,7 +6,7 @@ from .memory import get_context_string
 
 
 load_dotenv()
-MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5-coder:7b")
+MODEL_NAME = os.getenv("MODEL_NAME", "qwen2.5-coder:3b")
 
 
 BASE_SYSTEM_PROMPT = """
