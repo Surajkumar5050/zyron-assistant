@@ -166,8 +166,36 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         command_json = {"action": "camera_stream", "value": "on"}
     elif "/camera_off" in lower_text:
         command_json = {"action": "camera_stream", "value": "off"}
-    elif "/recordaudio" in lower_text or "record audio" in lower_text:
-        command_json = {"action": "record_audio", "duration": 10}
+    elif "/recordaudio" in lower_text:
+        parts = lower_text.split()
+        if len(parts) > 1:
+            arg = parts[1]
+            try:
+                duration = 10
+                if arg.endswith('m'):
+                    duration = int(arg[:-1]) * 60
+                elif arg.endswith('s'):
+                    duration = int(arg[:-1])
+                else:
+                    duration = int(arg)
+                
+                # Cap duration check (Max 1 hour)
+                if duration > 3600: 
+                    duration = 3600
+                    await update.message.reply_text("⚠️ Duration capped at 1 hour.")
+
+                command_json = {"action": "record_audio", "duration": duration}
+            except ValueError:
+                await update.message.reply_text("❌ Invalid format. try `/recordaudio 10s` or `/recordaudio 1m`.", reply_markup=get_main_keyboard())
+                return
+        else:
+            await update.message.reply_text(
+                "🎙️ **Audio Recording**\n\nPlease specify a duration:\n• `/recordaudio 10s` (10 seconds)\n• `/recordaudio 2m` (2 minutes)\n\n*Maximum: 1 hour*", 
+                parse_mode='Markdown',
+                reply_markup=get_main_keyboard()
+            )
+            return
+            
     elif "/location" in lower_text or any(x in lower_text for x in ["my location", "where am i", "laptop location", "where is my laptop", "find location"]):
         command_json = {"action": "get_location"}
     # --- EXISTING BUTTON TRIGGERS ---
@@ -204,7 +232,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Show processing message (with error handling)
     status_msg = None
     try:
-        status_msg = await update.message.reply_text("⚡ Thinking...", reply_markup=get_main_keyboard())
+        feedback_text = "⚡ Thinking..."
+        
+        # Specific feedback for recording
+        if command_json and command_json.get('action') == "record_audio":
+            d = command_json.get('duration', 10)
+            if d < 60:
+                feedback_text = f"🎙️ Recording for {d} seconds..."
+            else:
+                feedback_text = f"🎙️ Recording for {d//60} mins..."
+
+        status_msg = await update.message.reply_text(feedback_text, reply_markup=get_main_keyboard())
     except Exception:
         pass # If we can't send "Thinking", just continue
 
@@ -401,7 +439,14 @@ Longitude: {location_data['longitude']}
         elif action == "record_audio":
             if status_msg: await status_msg.delete()
             duration = command_json.get("duration", 10)
-            loader = await update.message.reply_text(f"🎤 Recording audio for {duration} seconds...", reply_markup=get_main_keyboard())
+            
+            # Nice duration format
+            if duration < 60:
+                dur_str = f"{duration} seconds"
+            else:
+                dur_str = f"{duration//60} mins"
+
+            loader = await update.message.reply_text(f"🎙️ Recording audio for {dur_str}...", reply_markup=get_main_keyboard())
             
             # Execute audio recording in executor to avoid blocking
             loop = asyncio.get_running_loop()
@@ -409,13 +454,13 @@ Longitude: {location_data['longitude']}
             
             if audio_path and os.path.exists(audio_path):
                 try:
-                    await loader.delete()
+                    await loader.edit_text("✅ Recording complete. Sending...")
                 except:
                     pass  # Ignore if message already deleted
                 
                 # Send the audio file
                 try:
-                    await update.message.reply_audio(audio=open(audio_path, 'rb'), caption="🎵 Recorded Audio (10 seconds)")
+                    await update.message.reply_audio(audio=open(audio_path, 'rb'), caption=f"🎵 Recorded Audio ({dur_str})")
                 except Exception as e:
                      await update.message.reply_text(f"❌ Upload Failed: {e}")
             else:

@@ -18,5 +18,6 @@ blacklist.json
 long_term_memory.json
 clipboard_history.json
 file_activity_log.json
+audio_recording.wav
 *.jpg
 *.png
