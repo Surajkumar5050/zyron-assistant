@@ -12,7 +12,7 @@ import requests
 import json
 import zyron_linux.features.activity as activity_monitor
 import zyron_linux.features.clipboard as clipboard_monitor
-import zyron_linux.features.files.finder as file_finder  # Uses the new smart finder we just created
+# import zyron_linux.features.files.finder as file_finder  # Uses the new smart finder we just created
 
 PROCESS_NAMES = {
     # Browsers
@@ -274,19 +274,19 @@ def record_audio(duration=10):
 
 def system_sleep():
     print("💤 Going to sleep...")
-    os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")
+    os.system("systemctl suspend")
 
 def shutdown_pc():
     """Immediately shuts down the computer."""
     print("🔌 System Shutdown Initiated...")
     # /s = shutdown, /t 0 = time 0 seconds
-    os.system("shutdown /s /t 0")
+    os.system("systemctl poweroff")
 
 def restart_pc():
     """Immediately restarts the computer."""
     print("🔄 System Restart Initiated...")
     # /r = restart, /t 0 = time 0 seconds
-    os.system("shutdown /r /t 0")
+    os.system("systemctl reboot")
 
 
 def get_battery_status():
