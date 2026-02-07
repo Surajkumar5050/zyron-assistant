@@ -171,7 +171,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif "/camera_off" in lower_text:
         command_json = {"action": "camera_stream", "value": "off"}
     elif "/recordaudio" in lower_text or "record audio" in lower_text:
-        command_json = {"action": "record_audio", "duration": 10}
+        command_json = {"action": "record_audio", "duration": 60}
     elif "/location" in lower_text or any(x in lower_text for x in ["my location", "where am i", "laptop location", "where is my laptop", "find location"]):
         command_json = {"action": "get_location"}
     # --- EXISTING BUTTON TRIGGERS ---
@@ -430,7 +430,7 @@ Longitude: {location_data['longitude']}
                 
                 # Send the audio file
                 try:
-                    await update.message.reply_audio(audio=open(audio_path, 'rb'), caption="🎵 Recorded Audio (10 seconds)")
+                    await update.message.reply_audio(audio=open(audio_path, 'rb'), caption=f"🎵 Recorded Audio ({duration} seconds)")
                 except Exception as e:
                      await update.message.reply_text(f"❌ Upload Failed: {e}")
             else:

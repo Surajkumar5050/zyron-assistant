@@ -238,7 +238,7 @@ def capture_screen():
         return None
 
 
-def record_audio(duration=10):
+def record_audio(duration=60):
     """Records audio from the default microphone for specified duration (in seconds).
     Uses sounddevice library - Works on Windows Python 3.10 without C++ compiler!"""
     file_path = os.path.join(os.getcwd(), "audio_recording.wav")

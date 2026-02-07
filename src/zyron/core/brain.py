@@ -43,7 +43,7 @@ COMMANDS:
 9. Health: {"action": "check_health"}
    (Triggers: system health, cpu usage, ram check, how is the pc)
 
-10. Audio Record: {"action": "record_audio", "duration": 10}
+10. Audio Record: {"action": "record_audio", "duration": 60}
     (Triggers: record audio, capture audio, /recordaudio)
 
 11. Activities: {"action": "get_activities"}
@@ -135,7 +135,7 @@ def process_command(user_input):
 
         # 5. Force Audio Recording
         elif "/recordaudio" in lower or "record audio" in lower:
-            data = {"action": "record_audio", "duration": 10}
+            data = {"action": "record_audio", "duration": 60}
 
         # 6. Force Activity Check
         elif any(x in lower for x in ["/activities", "/current_activities", "current activities", "what's open", "running apps", "active windows", "show activities", "what is happening", "open tabs", "what am i doing"]):
