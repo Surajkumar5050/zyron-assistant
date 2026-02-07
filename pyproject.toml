@@ -47,6 +47,7 @@ dependencies = [
 
 [project.scripts]
 zyron = "zyron.main:main"
+zyron-linux = "zyron_linux.main:main"
 
 [project.urls]
 Homepage = "https://github.com/Surajkumar5050/zyron-assistant"
