@@ -11,6 +11,12 @@
     "host_permissions": [
         "<all_urls>"
     ],
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content_agent.js"]
+        }
+    ],
     "background": {
         "scripts": [
             "background.js"

@@ -236,6 +236,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             command_json = {"action": "focus_mode", "sub_action": "status"}
 
+    # --- NAVIGATION AGENT TRIGGERS ---
+    elif "/read" in lower_text or "read page" in lower_text:
+        command_json = {"action": "browser_nav", "sub_action": "read"}
+        
+    elif "/scan" in lower_text:
+        command_json = {"action": "browser_nav", "sub_action": "scan"}
+        
+    elif "/scroll" in lower_text or "scroll down" in lower_text:
+        direction = "down"
+        if "up" in lower_text: direction = "up"
+        if "top" in lower_text: direction = "top"
+        if "bottom" in lower_text: direction = "bottom"
+        command_json = {"action": "browser_nav", "sub_action": "scroll", "direction": direction}
+        
+    elif "/type" in lower_text:
+        try:
+            parts = user_text.split(" ", 2)
+            if len(parts) >= 3:
+                command_json = {"action": "browser_nav", "sub_action": "type", "selector": parts[1], "text": parts[2]}
+        except: pass
+        
+    elif "/click" in lower_text:
+        try:
+            parts = user_text.split(" ", 1)
+            if len(parts) >= 2:
+                command_json = {"action": "browser_nav", "sub_action": "click", "selector": parts[1]}
+        except: pass
+
     # Show processing message (with error handling)
     status_msg = None
     try:
@@ -256,16 +284,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not command_json:
         loop = asyncio.get_running_loop()
         try:
-            # Use AI to process command
-            command_json = await loop.run_in_executor(None, process_command, user_text)
+            # Use AI to process command - now returns list
+            command_list = await loop.run_in_executor(None, process_command, user_text)
         except Exception as e:
             # If AI fails, send error
             if status_msg: await status_msg.delete()
             await update.message.reply_text(f"❌ Brain Error: {e}", reply_markup=get_main_keyboard())
             return
+    else:
+        # Normalize pre-parsed command to list
+        command_list = [command_json] if isinstance(command_json, dict) else command_json
 
+    # --- MULTI-COMMAND EXECUTION LOOP ---
+    total_commands = len(command_list) if command_list else 0
+    
+    for cmd_index, command_json in enumerate(command_list or []):
+        # Show step indicator for multi-command chains
+        if total_commands > 1:
+            step_msg = f"⚙️ Step {cmd_index + 1}/{total_commands}: {command_json.get('action', 'Processing')}..."
+            try:
+                if status_msg:
+                    await status_msg.edit_text(step_msg)
+                else:
+                    status_msg = await update.message.reply_text(step_msg, reply_markup=get_main_keyboard())
+            except:
+                pass
 
-    if command_json:
         action = command_json.get('action')
         
         # --- ACTIVITIES HANDLER (Supports splitting messages) ---
@@ -689,9 +733,6 @@ Longitude: {location_data['longitude']}
             command = command_json.get("command") # close, mute
             query = command_json.get("query", "").lower()
             
-            # Helper to find targets
-            import zyron.features.browser_control as browser_control
-            
             # --- SMART MATCHING LOGIC ---
             # 1. Get all open tabs
             tabs = activity_monitor.get_firefox_tabs()
@@ -795,6 +836,200 @@ Longitude: {location_data['longitude']}
             else:
                  await update.message.reply_text(f"❌ No tab found matching your description.", reply_markup=get_main_keyboard())
 
+        # --- NAVIGATION AGENT COMMANDS ---
+        elif action == "browser_nav":
+            try:
+                if status_msg:
+                    try: await status_msg.delete()
+                    except: pass
+                
+                sub_action = command_json.get("sub_action")
+                
+                if sub_action == "read":
+                    print("📖 Navigation Agent: Reading page...")
+                    loader = await update.message.reply_text("📖 Reading page content...", reply_markup=get_main_keyboard())
+                    
+                    loop = asyncio.get_running_loop()
+                    try:
+                        result = await asyncio.wait_for(
+                            loop.run_in_executor(None, browser_control.read_page),
+                            timeout=8.0
+                        )
+                    except asyncio.TimeoutError:
+                        await loader.edit_text("❌ Read timeout. Native Host not responding.")
+                        return
+
+                    if result and result.get("success"):
+                        title = result.get("title", "No Title")
+                        url = result.get("url", "Unknown URL")
+                        content = result.get("content", "")
+                        
+                        if len(content) > 3000:
+                            preview = content[:1000] + "..."
+                            msg_text = f"📄 {title}\n🔗 {url}\n\n{preview}\n\n(Content truncated)"
+                        else:
+                            msg_text = f"📄 {title}\n🔗 {url}\n\n{content}"
+                            
+                        try:
+                            await loader.edit_text(msg_text, disable_web_page_preview=True)
+                        except Exception as e:
+                            import io
+                            full_file_text = f"📄 {title}\n🔗 {url}\n\n{content}"
+                            file_obj = io.BytesIO(full_file_text.encode('utf-8'))
+                            file_obj.name = "page_content.txt"
+                            await update.message.reply_document(document=file_obj, caption="📄 Page Content (Full)")
+                    else:
+                        err = result.get("error", "Unknown error") if result else "No data returned"
+                        await loader.edit_text(f"❌ Read failed: {err}")
+
+                elif sub_action == "scroll":
+                    direction = command_json.get("direction", "down")
+                    browser_control.scroll_page(direction)
+                    try: await update.message.set_reaction(reaction="👇" if direction == "down" else "👆")
+                    except: await update.message.reply_text(f"📜 Scrolled {direction}", reply_markup=get_main_keyboard())
+
+                elif sub_action == "type":
+                    target = command_json.get("target") or command_json.get("selector")
+                    text = command_json.get("text")
+                    
+                    if target and text:
+                        target_id = target
+                        found_label = target
+                        
+                        if not str(target).isdigit():
+                            loader = await update.message.reply_text(f"🔍 Finding input '{target}'...", reply_markup=get_main_keyboard())
+                            
+                            loop = asyncio.get_running_loop()
+                            scan_result = await loop.run_in_executor(None, browser_control.scan_page)
+                            
+                            if scan_result and scan_result.get("success"):
+                                elements = scan_result.get("elements", [])
+                                input_elements = [el for el in elements if el['type'] in ['input', 'textarea']]
+                                
+                                best_match = None
+                                best_score = 0
+                                target_lower = target.lower()
+                                
+                                for el in input_elements:
+                                    el_text = el['text'].lower()
+                                    score = 0
+                                    if el_text == target_lower: score = 100
+                                    elif target_lower in el_text: score = 50
+                                    elif el_text in target_lower: score = 30
+                                    if score > best_score:
+                                        best_score = score
+                                        best_match = el
+                                        
+                                if best_match:
+                                    target_id = str(best_match['id'])
+                                    found_label = best_match['text']
+                                    try: await loader.edit_text(f"🎯 Found input: **{found_label}**", parse_mode='Markdown')
+                                    except: pass
+                                else:
+                                    try: await loader.edit_text(f"❌ Could not find input matching '{target}'")
+                                    except: await update.message.reply_text(f"❌ Could not find input matching '{target}'")
+                                    return
+                            else:
+                                await update.message.reply_text("❌ Scan failed during typing.")
+                                return
+
+                        browser_control.type_text(target_id, text)
+                        await update.message.reply_text(f"⌨️ Typed `{text}` into `{found_label}`", parse_mode='Markdown')
+                        
+                        if "search" in target_lower or "find" in target_lower:
+                            browser_control.press_key(target_id, "Enter")
+                            await update.message.reply_text("⌨️ Pressed **Enter**", parse_mode='Markdown')
+                    else:
+                        await update.message.reply_text("❌ Usage: `/type [field] [text]`")
+
+                elif sub_action == "scan":
+                    loader = await update.message.reply_text("🔍 Scanning page elements...", reply_markup=get_main_keyboard())
+                    
+                    loop = asyncio.get_running_loop()
+                    try:
+                        result = await asyncio.wait_for(
+                            loop.run_in_executor(None, browser_control.scan_page),
+                            timeout=8.0
+                        )
+                    except asyncio.TimeoutError:
+                        await loader.edit_text("❌ Scan timeout.")
+                        return
+
+                    if result and result.get("success"):
+                        elements = result.get("elements", [])
+                        if not elements:
+                            try: await loader.edit_text("❌ No interactive elements found.")
+                            except: await update.message.reply_text("❌ No interactive elements found.")
+                        else:
+                            lines = ["🎯 **Interactive Elements:**\n"]
+                            for el in elements:
+                                lines.append(f"`[{el['id']}]` {el['text']} ({el['type']})")
+                            msg = "\n".join(lines)
+                            if len(msg) > 4000: msg = msg[:4000] + "\n...(truncated)"
+                            try: await loader.edit_text(msg, parse_mode='Markdown')
+                            except: await update.message.reply_text(msg, parse_mode='Markdown')
+                    else:
+                        err_msg = f"❌ Scan failed: {result.get('error') if result else 'Unknown'}"
+                        try: await loader.edit_text(err_msg)
+                        except: await update.message.reply_text(err_msg)
+
+                elif sub_action == "click":
+                    target = command_json.get("target") or command_json.get("selector")
+                    if target:
+                        target_id = target
+                        clicked_text = target
+                        
+                        if not str(target).isdigit():
+                            loader = await update.message.reply_text(f"🔍 Searching for '{target}'...", reply_markup=get_main_keyboard())
+                            
+                            loop = asyncio.get_running_loop()
+                            scan_result = await loop.run_in_executor(None, browser_control.scan_page)
+                            
+                            if scan_result and scan_result.get("success"):
+                                elements = scan_result.get("elements", [])
+                                best_match = None
+                                best_score = 0
+                                target_lower = target.lower()
+                                
+                                for el in elements:
+                                    el_text = el['text'].lower()
+                                    score = 0
+                                    if el_text == target_lower: score = 100
+                                    elif target_lower in el_text: score = 50
+                                    elif el_text in target_lower: score = 30
+                                    else:
+                                        target_words = set(target_lower.split())
+                                        el_words = set(el_text.split())
+                                        overlap = len(target_words & el_words)
+                                        if overlap > 0: score = overlap * 10
+                                    if score > best_score:
+                                        best_score = score
+                                        best_match = el
+                                        
+                                if best_match:
+                                    target_id = str(best_match['id'])
+                                    clicked_text = best_match['text']
+                                    safe_text = clicked_text.replace("*", "").replace("_", "").replace("[", "").replace("`", "")
+                                    try: await loader.edit_text(f"🎯 Found: **{safe_text}** (ID: {target_id})", parse_mode='Markdown')
+                                    except: await update.message.reply_text(f"🎯 Found: {clicked_text} (ID: {target_id})")
+                                else:
+                                    try: await loader.edit_text(f"❌ Could not find element matching '{target}'")
+                                    except: await update.message.reply_text(f"❌ Could not find element matching '{target}'")
+                                    return
+                            else:
+                                err = scan_result.get("error", "Unknown error") if scan_result else "No result from browser"
+                                try: await loader.edit_text(f"❌ Failed to scan page: {err}")
+                                except: await update.message.reply_text(f"❌ Failed to scan page: {err}")
+                                return
+
+                        browser_control.click_element(target_id)
+                        await update.message.reply_text(f"🖱️ Clicked `{clicked_text}`", parse_mode='Markdown')
+                    else:
+                        await update.message.reply_text("❌ Usage: `/click [text or ID]`")
+            except Exception as e:
+                print(f"Browser Nav Error: {e}")
+                await update.message.reply_text(f"❌ Browser Error: {e}")
+
         else:
             # Generic action execution
             try:
@@ -804,6 +1039,14 @@ Longitude: {location_data['longitude']}
             except Exception as e:
                 if status_msg: await status_msg.delete()
                 await update.message.reply_text(f"❌ Error: {e}", reply_markup=get_main_keyboard())
+
+        # --- DELAY BETWEEN CHAINED BROWSER COMMANDS ---
+        if total_commands > 1 and cmd_index < total_commands - 1:
+            # Delay for browser actions to allow page to load
+            if action in ["open_url", "browser_nav", "browser_control"]:
+                await asyncio.sleep(2.5)
+            else:
+                await asyncio.sleep(0.5)
 
 if __name__ == "__main__":
     print("🚀 TELEGRAM BOT STARTED...")

@@ -43,7 +43,6 @@ function connectToNativeHost() {
     }
     else if (response.action === "capture_tab") {
       // TAB SCREENSHOT
-      // TAB SCREENSHOT
       if (response.tabId) {
         // 1. Activate the tab first (required for captureVisibleTab)
         chrome.tabs.update(response.tabId, { active: true }, () => {
@@ -61,6 +60,24 @@ function connectToNativeHost() {
           }, 800); // 800ms delay to be safe
         });
       }
+    }
+    // --- NAVIGATION AGENT ---
+    else if (["highlight", "click", "read", "scroll", "type", "scan", "press_key"].includes(response.action)) {
+      console.log("🧭 NAV COMMAND RECEIVED:", response);
+      // Send to Content Script in the ACTIVE TAB
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs && tabs[0]) {
+          console.log("Target Tab:", tabs[0].id, tabs[0].url);
+          chrome.tabs.sendMessage(tabs[0].id, response).then(reply => {
+            console.log("✅ Content Script Replied:", reply);
+            if (reply) {
+              nativePort.postMessage({ action: "navigation_result", data: reply });
+            }
+          }).catch(err => {
+            console.error("Nav Error:", err);
+          });
+        }
+      });
     }
   });
 

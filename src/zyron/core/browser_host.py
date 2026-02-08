@@ -105,6 +105,16 @@ def main():
                         # Log error
                         pass
             
+            # Action: Navigation Result
+            elif message.get("action") == "navigation_result":
+                # Save the result from the content script to a file
+                nav_path = Path(os.environ.get('TEMP', '')) / 'zyron_nav_result.json'
+                try:
+                    with open(nav_path, 'w') as f:
+                        json.dump(message.get("data", {}), f)
+                except Exception as e:
+                    send_message({"status": "error", "message": str(e)})
+
             else:
                 send_message({"status": "unknown_action", "received": message})
                 
