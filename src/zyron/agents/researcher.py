@@ -48,36 +48,58 @@ def perform_research(query):
     search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
     content = ""
     tab_id = None
+    method = "None"
+
+    print(f"🔍 Starting research for: '{query}'")
 
     # 1. Decide: Browser vs Headless
     if is_firefox_running():
-        # Option A: Use Firefox Background Tab
+        print("   → Firefox is running. Attempting Stealth Browser Bridge...")
         tab_id = create_tab(search_url, active=False)
         if tab_id:
-            time.sleep(3) 
+            print(f"   → Created Stealth Tab (ID: {tab_id}). Waiting for load...")
+            time.sleep(4) # Increased wait for slow devs
             result = read_page(tab_id=tab_id)
             if result and result.get("success"):
                 content = result.get("content", "")
+                method = "Stealth Browser (Firefox)"
+                print("   ✅ Content extracted via Browser.")
+            else:
+                print(f"   ⚠️ Browser Read Failed: {result.get('error') if result else 'No result'}")
             close_tab(tab_id)
+        else:
+            print("   ⚠️ Failed to create tab. Native Host might not be registered.")
     
     # Fallback / Option B: Use Requests (Headless)
     if not content:
+        print("   → Falling back to Headless Research (Requests)...")
         try:
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            # Randomize UA slightly for better bypass
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
             response = requests.get(search_url, headers=headers, timeout=10)
             if response.status_code == 200:
-                content = clean_html(response.text)
+                html = response.text
+                if "unusual traffic" in html.lower() or "captcha" in html.lower():
+                    print("   ❌ HEADLESS BLOCKED BY GOOGLE (CAPTCHA)")
+                    return "⚠️ Stealth Research was blocked by Google security. Please open Firefox and try again (ensure the extension is active)."
+                
+                content = clean_html(html)
+                method = "Headless Fallback (Requests)"
+                print("   ✅ Content extracted via Headless.")
+            else:
+                print(f"   ❌ Headless Failed: Status {response.status_code}")
         except Exception as e:
-            print(f"❌ Headless research failed: {e}")
+            print(f"   ❌ Headless error: {e}")
 
     if not content:
-        return "I tried both browser and network research but couldn't get any results. Are you offline?"
+        return "❌ I tried both browser and network research but couldn't get any results. Please check your internet or ensure Firefox is open with the Zyron extension."
 
     # 2. Analyze with LLM
     now = datetime.now().strftime("%A, %B %d, %Y")
-    prompt = f"CURRENT DATE (Ground Truth): {now}\nUSER QUERY: {query}\n\nPAGE CONTENT:\n{content}"
+    prompt = f"METHOD USED: {method}\nCURRENT DATE (Ground Truth): {now}\nUSER QUERY: {query}\n\nPAGE CONTENT (Extracted from Google Search):\n{content}"
     
     try:
+        print(f"   → Synthesizing answer using {MODEL_NAME}...")
         response = ollama.chat(
             model=MODEL_NAME,
             messages=[
@@ -86,10 +108,12 @@ def perform_research(query):
             ],
             keep_alive=0
         )
-        return response['message']['content']
+        answer = response['message']['content']
+        print("✅ Research synthesis complete.")
+        return answer
     except Exception as e:
         print(f"❌ Synthesis error: {e}")
-        return "I found the info but had trouble processing it."
+        return f"⚠️ I found information via {method} but had trouble processing it with {MODEL_NAME}. Check if the model is pulled correctly."
 
 if __name__ == "__main__":
     print(perform_research("Who is CEO of OpenAI?"))
