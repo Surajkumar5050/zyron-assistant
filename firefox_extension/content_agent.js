@@ -56,20 +56,41 @@ function highlightElement(selector) {
  * Robust click handler
  */
 function clickElement(selector) {
-    console.log("🖱️ clickElement:", selector);
+    console.log("🖱️ clickElement V3:", selector);
     try {
-        const el = document.querySelector(selector);
+        const el = document.querySelector(selector) || document.querySelector(`[data-zyron-id="${selector}"]`);
         if (el) {
-            highlightElement(selector); // Visual feedback before action
+            // 1. Scroll and highlight
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            highlightElement(selector);
 
-            // Wait slightly for visual feedback
-            setTimeout(() => {
-                el.click();
-                // Special handling for form submissions or links
-                if (el.tagName === 'INPUT' && el.type === 'submit') el.form.submit();
-            }, 300);
+            // 2. Clear focus first to ensure mousedown triggers focus correctly
+            if (document.activeElement && document.activeElement !== el) {
+                document.activeElement.blur();
+            }
 
-            return { success: true, message: `Clicked ${selector}` };
+            // 3. Dispatch Mouse Events Sequence
+            const opts = { bubbles: true, cancelable: true, view: window, buttons: 1 };
+            el.dispatchEvent(new MouseEvent('mousedown', opts));
+            el.focus();
+            el.dispatchEvent(new MouseEvent('mouseup', opts));
+            el.dispatchEvent(new MouseEvent('click', opts));
+
+            // 4. Fallback for link-wrapped items (Common on YouTube SPAs)
+            const link = el.closest('a');
+            if (link && link.href && !link.href.startsWith('javascript:')) {
+                console.log("🔗 Ensuring navigation for link:", link.href);
+                // We use a small timeout to allow SPA internal routers (like YouTube's SPF) to pick up the click first.
+                // If the URL hasn't changed or the click didn't fire navigation, this provides a safety net.
+                setTimeout(() => {
+                    // Only force navigation if we are still on the same page and no SPA transition occurred
+                    // (Actually, el.click() is often best for SPAs, but if it fails, direct URL set is the ultimate fallback)
+                    // For now, let's just use .click() on the anchor itself as a secondary attempt
+                    link.click();
+                }, 50);
+            }
+
+            return { success: true, message: `Clicked ${selector} (V3 Robust)` };
         } else {
             return { success: false, error: "Element not found" };
         }
@@ -251,22 +272,36 @@ function scanPage() {
             const zyronId = idCounter++;
             el.dataset.zyronId = zyronId;
 
-            // get text content
+            // get metadata
             let text = el.innerText || el.value || el.placeholder || el.getAttribute('aria-label') || "Unlabeled";
             text = text.replace(/\s+/g, ' ').trim().substring(0, 50);
 
             if (!text) return; // skip empty elements
 
+            // Area detection (is it in a nav, aside, etc?)
+            const areaEl = el.closest('nav, aside, header, footer, [role="navigation"], [role="banner"], [role="contentinfo"]');
+            const area = areaEl ? areaEl.tagName.toLowerCase() || areaEl.getAttribute('role') : 'main';
+
             interactables.push({
                 id: zyronId,
                 type: el.tagName.toLowerCase(),
-                text: text
+                text: text,
+                area: area,
+                url: el.href || ""
             });
+        });
+
+        // 3. Prioritize 'main' area elements (move them to the front)
+        interactables.sort((a, b) => {
+            if (a.area === 'main' && b.area !== 'main') return -1;
+            if (a.area !== 'main' && b.area === 'main') return 1;
+            return 0;
         });
 
         return Promise.resolve({
             success: true,
-            elements: interactables.slice(0, 100) // limit to 100 items to avoid token overflow
+            total_scanned: interactables.length,
+            elements: interactables.slice(0, 400) // Support deeper pages like YouTube
         });
     } catch (e) {
         return Promise.resolve({ success: false, error: e.message });

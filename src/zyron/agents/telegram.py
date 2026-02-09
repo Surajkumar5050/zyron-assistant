@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import os
+import re # Support regex for better scoring
 from dotenv import load_dotenv
 from telegram import Update, constants, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, CommandHandler, CallbackQueryHandler, filters
@@ -316,6 +317,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 pass
 
         action = command_json.get('action')
+        query = user_text.lower() # Ensure 'query' is always defined for matching logic
+        
+        # --- BROWSER INTERACTION AUTO-CORRECTION ---
+        # If LLM sends 'browser_control' but query contains interactive verbs (click/type),
+        # re-route to 'browser_nav' for better page interaction.
+        if action == "browser_control":
+            query = command_json.get("query", "").lower()
+            # Comprehensive list of junk words to strip from targets
+            junk_words = [
+                "click", "type", "press", "search", "scroll", "read", "first", "there", 
+                "the", "on", "to", "at", "of", "a", "an", "in", "with", "is", "into",
+                "and", "or", "button", "link", "element", "item", "select", "go",
+                "then", "for", "open", "opn", "show", "me", "find", "search"
+            ]
+            is_interaction = any(v in query for v in junk_words) or "target" in command_json
+            
+            if is_interaction:
+                 print(f"🔄 Auto-Correcting: Redirecting Browser Control ({query}) to Browser Nav")
+                 action = "browser_nav"
+                 command_json["sub_action"] = "click" if "click" in query else "scan"
+                 # Clean up the target using token-based filtering (e.g., "click on first video" -> "video")
+                 target_tokens = query.split()
+                 clean_tokens = [t for t in target_tokens if t not in junk_words]
+                 command_json["target"] = " ".join(clean_tokens).strip()
+                 print(f"🎯 Cleaned target for nav: '{command_json['target']}'")
         
         # --- ACTIVITIES HANDLER (Supports splitting messages) ---
         if action == "get_activities":
@@ -663,7 +689,6 @@ Longitude: {location_data['longitude']}
                         await upload_msg.delete()
                         
                         # Update memory with successful file type preference
-                        import memory
                         file_ext = os.path.splitext(file_name)[1].replace('.', '').lower()
                         memory.track_file_preference(file_ext)
                         
@@ -738,109 +763,93 @@ Longitude: {location_data['longitude']}
             command = command_json.get("command") # close, mute, screenshot
             query = command_json.get("query", "").lower()
             
-            # --- AUTO-CORRECTION: REDIRECT TO NAV ---
-            # If the LLM sent 'browser_control' but with interaction words, it's a Nav intent
-            interaction_verbs = ["click", "type", "press", "search", "scroll", "read", "first", "there"]
-            is_interaction = any(v in query for v in interaction_verbs) or "target" in command_json
+            # Proceed with standard Tab Management
+            # 1. Get all open tabs
+            tabs = activity_monitor.get_firefox_tabs()
             
-            if is_interaction and "browser_nav" not in [action]:
-                 print(f"🔄 Auto-Correcting: Redirecting Browser Control ({query}) to Browser Nav")
-                 # Re-routing logic flow to the nav handler below
-                 action = "browser_nav"
-                 command_json["sub_action"] = "click" if "click" in query else "scan"
-                 if "target" not in command_json: command_json["target"] = query
-            else:
-                # Proceed with standard Tab Management
-                # 1. Get all open tabs
-                tabs = activity_monitor.get_firefox_tabs()
-                
-                if not tabs:
-                    await update.message.reply_text("❌ No Firefox tabs found (or bridge not connected).", reply_markup=get_main_keyboard())
-                    return
+            if not tabs:
+                await update.message.reply_text("❌ No Firefox tabs found (or bridge not connected).", reply_markup=get_main_keyboard())
+                return
 
-                # 2. Tokenize the user query
-                # Stop words filter out interaction words to avoid ruin matching score
-                stop_words = ["close", "mute", "unmute", "the", "tab", "window", "browser", "video", "music", "about", "play", "pause"] + interaction_verbs
-                query_words = [w for w in query.split() if w not in stop_words and len(w) > 2]
-                
-                # --- FAILOVER TO STICKY TAB ---
-                best_match = None
-                highest_score = 0
-                
-                if not query_words and memory.short_term.get("last_focused_tab"):
-                     print(f"🎯 Sticky Tab: Using last focused tab: {memory.short_term['last_focused_tab']}")
-                     # Find the tab object for the last focused one
-                     for tab in tabs:
-                         if tab.get('title') == memory.short_term['last_focused_tab']:
-                             best_match = tab
-                             highest_score = 100
-                             break
-                
-                if not best_match:
-                    if not query_words:
-                         await update.message.reply_text("❓ Please specify which tab (e.g., 'Close YouTube').", reply_markup=get_main_keyboard())
-                         return
-                    print(f"🔍 Searching tabs for keywords: {query_words}")
-                    for tab in tabs:
-                        score = 0
-                        title = tab.get('title', '').lower()
-                        url = tab.get('url', '').lower()
-                        for word in query_words:
-                            if word in title: score += 2
-                            elif word in url: score += 1
-                        if " ".join(query_words) in title: score += 5
-                        
-                        print(f"   - Checking: {title[:20]}... Score: {score}")
-                        if score > highest_score:
-                            highest_score = score
-                            best_match = tab
-                
-                # 4. Execute on best match if score is sufficient
-                if best_match and highest_score > 0:
-                    tab_id = best_match.get('id')
-                    tab_title = best_match.get('title')
-                    from zyron.core import memory
-                    memory.update_context("browser_interaction", tab_title)
-                    
-                    if tab_id:
-                        if command == "close":
-                            browser_control.close_tab(tab_id)
-                            await update.message.reply_text(f"🗑️ Closed: **{best_match.get('title')}**", parse_mode='Markdown', reply_markup=get_main_keyboard())
-                        elif command == "mute":
-                            browser_control.mute_tab(tab_id, True)
-                            await update.message.reply_text(f"🔇 Muted: **{best_match.get('title')}**", parse_mode='Markdown', reply_markup=get_main_keyboard())
-                        elif command == "unmute":
-                            browser_control.mute_tab(tab_id, False)
-                            await update.message.reply_text(f"🔊 Unmuted: **{best_match.get('title')}**", parse_mode='Markdown', reply_markup=get_main_keyboard())
-                        elif command in ["play", "pause"]:
-                            # We don't have media_control in browser_control.py yet, but placeholder
-                            await update.message.reply_text(f"🎬 Command {command} sent to **{tab_title}**", reply_markup=get_main_keyboard())
-                        elif command == "screenshot":
-                            # ... screenshot logic ... (keep it as is)
-                            window_id = best_match.get('windowId')
-                            browser_control.capture_tab_with_window(tab_id, window_id)
-                            loader = await update.message.reply_text("📸 Capturing tab...", reply_markup=get_main_keyboard())
-                            shot_path = os.path.join(os.environ.get('TEMP', ''), 'zyron_tab_screenshot.png')
-                            if os.path.exists(shot_path):
-                                try: os.remove(shot_path)
-                                except: pass
-                            found = False
-                            for _ in range(10):
-                                if os.path.exists(shot_path):
-                                    found = True
-                                    break
-                                await asyncio.sleep(0.5)
-                            if found:
-                                await update.message.reply_photo(photo=open(shot_path, 'rb'), caption=f"📸 **{best_match.get('title')}**")
-                                await loader.delete()
-                            else:
-                                await loader.edit_text("❌ Screenshot timeout.")
-                    else:
-                        await update.message.reply_text(f"❌ Found '**{best_match.get('title', 'Unknown')}**' but it has no ID.", reply_markup=get_main_keyboard())
-                    return # Exit this branch if execution succeeded
-                else:
-                     await update.message.reply_text(f"❌ No tab found matching your description.", reply_markup=get_main_keyboard())
+            # 2. Tokenize the user query
+            interaction_verbs = ["click", "type", "press", "search", "scroll", "read", "first", "there", "the"]
+            stop_words = ["close", "mute", "unmute", "the", "tab", "window", "browser", "video", "music", "about", "play", "pause"] + interaction_verbs
+            query_words = [w for w in query.split() if w not in stop_words and len(w) > 2]
+            
+            # --- FAILOVER TO STICKY TAB ---
+            best_match = None
+            highest_score = 0
+            
+            if not query_words and memory.short_term.get("last_focused_tab"):
+                 print(f"🎯 Sticky Tab: Using last focused tab: {memory.short_term['last_focused_tab']}")
+                 for tab in tabs:
+                     if tab.get('title') == memory.short_term['last_focused_tab']:
+                         best_match = tab
+                         highest_score = 100
+                         break
+            
+            if not best_match:
+                if not query_words:
+                     await update.message.reply_text("❓ Please specify which tab (e.g., 'Close YouTube').", reply_markup=get_main_keyboard())
                      return
+                print(f"🔍 Searching tabs for keywords: {query_words}")
+                for tab in tabs:
+                    score = 0
+                    title = tab.get('title', '').lower()
+                    url = tab.get('url', '').lower()
+                    for word in query_words:
+                        if word in title: score += 2
+                        elif word in url: score += 1
+                    if " ".join(query_words) in title: score += 5
+                    
+                    print(f"   - Checking: {title[:20]}... Score: {score}")
+                    if score > highest_score:
+                        highest_score = score
+                        best_match = tab
+            
+            # 4. Execute on best match if score is sufficient
+            if best_match and highest_score > 0:
+                tab_id = best_match.get('id')
+                tab_title = best_match.get('title')
+                memory.update_context("browser_interaction", tab_title)
+                
+                if tab_id:
+                    if command == "close":
+                        browser_control.close_tab(tab_id)
+                        await update.message.reply_text(f"🗑️ Closed: **{best_match.get('title')}**", parse_mode='Markdown', reply_markup=get_main_keyboard())
+                    elif command == "mute":
+                        browser_control.mute_tab(tab_id, True)
+                        await update.message.reply_text(f"🔇 Muted: **{best_match.get('title')}**", parse_mode='Markdown', reply_markup=get_main_keyboard())
+                    elif command == "unmute":
+                        browser_control.mute_tab(tab_id, False)
+                        await update.message.reply_text(f"🔊 Unmuted: **{best_match.get('title')}**", parse_mode='Markdown', reply_markup=get_main_keyboard())
+                    elif command in ["play", "pause"]:
+                        await update.message.reply_text(f"🎬 Command {command} sent to **{tab_title}**", reply_markup=get_main_keyboard())
+                    elif command == "screenshot":
+                        window_id = best_match.get('windowId')
+                        browser_control.capture_tab_with_window(tab_id, window_id)
+                        loader = await update.message.reply_text("📸 Capturing tab...", reply_markup=get_main_keyboard())
+                        shot_path = os.path.join(os.environ.get('TEMP', ''), 'zyron_tab_screenshot.png')
+                        if os.path.exists(shot_path):
+                            try: os.remove(shot_path)
+                            except: pass
+                        found = False
+                        for _ in range(10):
+                            if os.path.exists(shot_path):
+                                found = True
+                                break
+                            await asyncio.sleep(0.5)
+                        if found:
+                            await update.message.reply_photo(photo=open(shot_path, 'rb'), caption=f"📸 **{best_match.get('title')}**")
+                            await loader.delete()
+                        else:
+                            await loader.edit_text("❌ Screenshot timeout.")
+                else:
+                    await update.message.reply_text(f"❌ Found '**{best_match.get('title', 'Unknown')}**' but it has no ID.", reply_markup=get_main_keyboard())
+                return
+            else:
+                 await update.message.reply_text(f"❌ No tab found matching your description.", reply_markup=get_main_keyboard())
+                 return
 
         # --- NAVIGATION AGENT COMMANDS ---
         elif action == "browser_nav":
@@ -868,6 +877,7 @@ Longitude: {location_data['longitude']}
                     if result and result.get("success"):
                         title = result.get("title", "No Title")
                         url = result.get("url", "Unknown URL")
+                        memory.update_context("browser_interaction", title) # Update Sticky Tab context
                         content = result.get("content", "")
                         
                         if len(content) > 3000:
@@ -993,13 +1003,24 @@ Longitude: {location_data['longitude']}
                             
                             if scan_result and scan_result.get("success"):
                                 elements = scan_result.get("elements", [])
-                                best_match = None
-                                best_score = 0
+                                scores = []
                                 target_lower = target.lower()
                                 
+                                # Detect positional request
+                                ordinals = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "last": -1}
+                                skip_n = 0
+                                for ord_word, pos in ordinals.items():
+                                    if ord_word in query: # check the original user query for ordinals
+                                        skip_n = pos
+                                        break
+
                                 for el in elements:
                                     el_text = el['text'].lower()
+                                    el_area = el.get('area', 'main')
+                                    el_url = el.get('url', '').lower()
+                                    
                                     score = 0
+                                    # 1. Text Similarity Score
                                     if el_text == target_lower: score = 100
                                     elif target_lower in el_text: score = 50
                                     elif el_text in target_lower: score = 30
@@ -1007,14 +1028,58 @@ Longitude: {location_data['longitude']}
                                         target_words = set(target_lower.split())
                                         el_words = set(el_text.split())
                                         overlap = len(target_words & el_words)
-                                        if overlap > 0: score = overlap * 10
-                                    if score > best_score:
-                                        best_score = score
-                                        best_match = el
+                                        if overlap > 0: score = overlap * 15
+
+                                    # 2. Area Penalty/Boost (STRENGTHENED)
+                                    if el_area in ["nav", "aside", "header", "footer"]:
+                                        score -= 80
+                                    elif el_area == "main":
+                                        score += 30
+
+                                    # 3. Contextual URL Boost (STRENGTHENED)
+                                    if "video" in target_lower or "watch" in target_lower:
+                                        if "watch?v=" in el_url: score += 100
+                                    
+                                    # 4. Filter out common nav-only matches (STRENGTHENED)
+                                    nav_junk = ["liked", "history", "playlist", "library", "home", "shorts", "subscriptions", "your videos", "library"]
+                                    if any(j in el_text for j in nav_junk) and el_text != target_lower:
+                                        score -= 60
+                                    
+                                    # 5. Penalize numeric-only "videos" counts (e.g. "9 videos")
+                                    if re.search(r'^\d+ videos?$', el_text):
+                                        score -= 100
+                                    elif re.search(r'^\d+ views?$', el_text):
+                                        score -= 100
+
+                                    if score > 0:
+                                        scores.append((score, el))
+                                
+                                # Sort by score descending
+                                scores.sort(key=lambda x: x[0], reverse=True)
+                                
+                                # --- DEBUG SCORE LOGGING ---
+                                print(f"🔍 Top scores for '{target}':")
+                                for s, el in scores[:10]:
+                                    print(f"   [{s:3}] {el['text'][:30]:30} (Area: {el['area']})")
+                                
+                                # Apply ordinal selection if requested
+                                best_match = None
+                                if scores:
+                                    if skip_n == -1: # "last"
+                                        best_match = scores[-1][1]
+                                    elif skip_n > 0:
+                                        # Pick the N-th high-scoring item
+                                        idx = min(skip_n - 1, len(scores) - 1)
+                                        best_match = scores[idx][1]
+                                    else:
+                                        best_match = scores[0][1]
                                         
                                 if best_match:
                                     target_id = str(best_match['id'])
                                     clicked_text = best_match['text']
+                                    # Update short-term memory with the last clicked text/context if possible
+                                    # We don't have the tab title here, but we can update a generic interaction context
+                                    memory.short_term["last_interaction"] = clicked_text
                                     safe_text = clicked_text.replace("*", "").replace("_", "").replace("[", "").replace("`", "")
                                     try: await loader.edit_text(f"🎯 Found: **{safe_text}** (ID: {target_id})", parse_mode='Markdown')
                                     except: await update.message.reply_text(f"🎯 Found: {clicked_text} (ID: {target_id})")

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Zyron Activity Monitor",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "description": "Monitors browser tabs for Zyron Desktop Assistant",
     "permissions": [
         "tabs",
