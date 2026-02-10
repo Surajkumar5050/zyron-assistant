@@ -116,6 +116,7 @@ ZYRON isn't just another assistant - it's your personal AI that lives entirely o
 - **System Health** - Real-time CPU, RAM, disk, and battery monitoring
 - **Storage Analysis** - Check available space across all drives
 - **Clipboard History** - Access your last 100 copied texts
+- **Zombie Process Reaper** - Auto-detects and alerts you about idle, high-memory apps (kills them on command)
 
 ### Media Capture
 - **Screenshots** - Capture your screen on command

@@ -9,10 +9,11 @@ from zyron.core.brain import process_command
 from zyron.agents.system import execute_command, capture_webcam
 import zyron.features.browser_control as browser_control
 import zyron.core.memory as memory
-import zyron.features.activity as activity_monitor  # Needed to format the output text
-import zyron.features.clipboard as clipboard_monitor  # For clipboard history
-import zyron.features.files.tracker as file_tracker  # <--- NEW IMPORT: THIS STARTS THE FILE TRACKER AUTOMATICALLY
-import zyron.features.focus_mode as focus_mode # <--- Feature #11: Focus Mode
+import zyron.features.activity as activity_monitor
+import zyron.features.clipboard as clipboard_monitor
+import zyron.features.files.tracker as file_tracker
+import zyron.features.focus_mode as focus_mode
+import zyron.features.zombie_reaper as zombie_reaper
 from zyron.utils.env_check import check_dependencies
 
 # Run health check before anything else
@@ -21,18 +22,37 @@ check_dependencies()
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-ALLOWED_USERNAME = os.getenv("ALLOWED_TELEGRAM_USERNAME")
+ALLOWED_USERS = os.getenv("ALLOWED_TELEGRAM_USERNAME", "").split(",")
+# Store chat ID in saved_media folder for persistence
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+CHAT_ID_FILE = os.path.join(PROJECT_ROOT, "saved_media", "telegram_chat_id.txt")
+
+def save_chat_id(chat_id):
+    try:
+        os.makedirs(os.path.dirname(CHAT_ID_FILE), exist_ok=True)
+        with open(CHAT_ID_FILE, 'w') as f:
+            f.write(str(chat_id))
+    except Exception as e:
+        print(f"⚠️ Failed to save Chat ID: {e}")
+
+def load_chat_id():
+    try:
+        if os.path.exists(CHAT_ID_FILE):
+            with open(CHAT_ID_FILE, 'r') as f:
+                return int(f.read().strip())
+    except:
+        return None
 
 if not TOKEN:
     print("❌ Error: TELEGRAM_TOKEN not found in .env file.")
     exit()
 
-if not ALLOWED_USERNAME:
+if not ALLOWED_USERS or ALLOWED_USERS == ['']: # Check if it's empty or just an empty string from split
     print("⚠️ Warning: ALLOWED_TELEGRAM_USERNAME not found in .env file. Bot will be open to everyone!")
     ALLOWED_USERS = []
 else:
-    ALLOWED_USERS = [ALLOWED_USERNAME]
-    print(f"🔒 Security: Only accepting commands from @{ALLOWED_USERNAME}")
+    ALLOWED_USERS = [u.strip() for u in ALLOWED_USERS if u.strip()]
+    print(f"🔒 Security: Only accepting commands from @{', '.join(ALLOWED_USERS)}")
 
 CAMERA_ACTIVE = False
 
@@ -62,11 +82,11 @@ logging.basicConfig(
 )
 
 def get_main_keyboard():
-    # Combined keyboard: Includes old buttons + new "/copied_texts"
+    # Main control keyboard
     keyboard = [
         [KeyboardButton("/screenshot"), KeyboardButton("/camera_on"), KeyboardButton("/camera_off")],
-        [KeyboardButton("🚨 PANIC")], #EMERGENCY PANIC BUTTON (Dedicated Row Panicccc)
-        [KeyboardButton("/sleep"), KeyboardButton("/restart"), KeyboardButton("/shutdown")], # <--- System Controls
+        [KeyboardButton("🚨 PANIC")],
+        [KeyboardButton("/sleep"), KeyboardButton("/restart"), KeyboardButton("/shutdown")],
         [KeyboardButton("/batterypercentage"), KeyboardButton("/systemhealth")],
         [KeyboardButton("/location"), KeyboardButton("/recordaudio")],
         [KeyboardButton("/clear_bin"), KeyboardButton("/storage")], 
@@ -115,7 +135,73 @@ async def handle_clipboard_callback(update: Update, context: ContextTypes.DEFAUL
             
     except Exception as e:
         print(f"Error handling clipboard callback: {e}")
+    except Exception as e:
+        print(f"Error handling clipboard callback: {e}")
         await query.message.reply_text(f"❌ Error: {e}", reply_markup=get_main_keyboard())
+
+async def zombie_alert_callback(bot, chat_id, zombie_list):
+    """
+    Called by the reaper thread when zombies are found.
+    Sends a formatted message to Telegram with actions.
+    """
+    if not zombie_list: return
+
+    for z in zombie_list:
+        pid = z['pid']
+        name = z['name']
+        ram = z['ram_mb']
+        idle = z['idle_time_str']
+
+        # Create interactive keyboard
+        keyboard = [
+            [
+                InlineKeyboardButton("🪓 Kill Process", callback_data=f"zkill_{pid}"),
+                InlineKeyboardButton("🛡️ Whitelist", callback_data=f"zallow_{name}")
+            ],
+            [InlineKeyboardButton("⏳ Ignore for 1h", callback_data=f"zignore_{pid}")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        message = (
+            f"🧟 **Zombie Process Detected!**\n\n"
+            f"**App:** `{name}`\n"
+            f"**Memory:** {ram} MB\n"
+            f"**Idle Time:** {idle}\n\n"
+            f"This process is consuming resources but hasn't been used in hours. What should I do?"
+        )
+        
+        try:
+            await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown', reply_markup=reply_markup)
+        except Exception as e:
+            print(f"⚠️ Failed to send Zombie Alert: {e}")
+
+@auth_required
+async def handle_zombie_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles button clicks on Zombie Alerts."""
+    query = update.callback_query
+    await query.answer()
+    
+    data = query.data
+    action, target = data.split("_", 1)
+    
+    if action == "zkill":
+        # Kill Process
+        try:
+            pid = int(target)
+            result = zombie_reaper.kill_process(pid)
+            await query.edit_message_text(f"{result}\n\n_Memory reclaimed!_ 🧠", parse_mode='Markdown')
+        except ValueError:
+            await query.edit_message_text("❌ Invalid Process ID.")
+
+    elif action == "zallow":
+        # Whitelist
+        result = zombie_reaper.add_to_whitelist(target)
+        await query.edit_message_text(f"{result}\n\n_I won't alert you about this app again._", parse_mode='Markdown')
+
+    elif action == "zignore":
+        # Ignore (Just delete message for now, logic later)
+        await query.edit_message_text("⏳ Ignored for now.")
+
 
 async def camera_monitor_loop(bot, chat_id):
     global CAMERA_ACTIVE
@@ -140,10 +226,32 @@ async def camera_monitor_loop(bot, chat_id):
 @auth_required
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
+    save_chat_id(update.effective_chat.id) # Save for auto-start next time
+    
     await update.message.reply_text(
         f"⚡ **Zyron Online!**\nHello {user}. Use the buttons below.",
         reply_markup=get_main_keyboard()
     )
+    
+    # Start the Reaper!
+    start_reaper_task(context.bot, update.effective_chat.id)
+
+def start_reaper_task(bot, chat_id):
+    """Helper to start the reaper with a specific bot/chat context"""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        print("⚠️ Could not get running loop for Reaper.")
+        return
+
+    def reaper_bridge(zombies):
+        asyncio.run_coroutine_threadsafe(
+            zombie_alert_callback(bot, chat_id, zombies),
+            loop
+        )
+    
+    zombie_reaper.start_reaper(callback_func=reaper_bridge)
+    print("🧟 Zombie Reaper attached to Telegram.")
 
 @auth_required
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1322,13 +1430,38 @@ if __name__ == "__main__":
     print("🚀 TELEGRAM BOT STARTED...")
     try:
         # Increase connection timeout to handle slow uploads better
+        
+        # Run
+        # Initialize Application
         application = ApplicationBuilder().token(TOKEN).read_timeout(60).write_timeout(60).build()
         
-        # Add handlers
+        # Handlers
         application.add_handler(CommandHandler("start", start_command))
-        application.add_handler(CallbackQueryHandler(handle_clipboard_callback)) # NEW: Clipboard handler
-        application.add_handler(MessageHandler(filters.TEXT | filters.COMMAND, handle_message))
+        application.add_handler(CallbackQueryHandler(handle_clipboard_callback, pattern="^copy_"))
+        application.add_handler(CallbackQueryHandler(handle_zombie_callback, pattern="^z(kill|allow|ignore)_"))
+        application.add_handler(MessageHandler(filters.TEXT, handle_message))
         
+        # Run
+        print("🤖 Bot is pooling...")
+        
+        # Auto-start Reaper if we remember the user
+        saved_id = load_chat_id()
+        if saved_id:
+            print(f"🔄 Auto-starting Zombie Reaper for Chat ID: {saved_id}")
+            # Launch in background after a short delay to let loop start
+            async def post_start(app):
+                 start_reaper_task(app.bot, saved_id)
+            
+            # Re-initialize to attach background task (Workaround for post_init)
+            
+            application = ApplicationBuilder().token(TOKEN).read_timeout(60).write_timeout(60).post_init(post_start).build()
+            # Re-add handlers (builder creates new instance)
+            application.add_handler(CommandHandler("start", start_command))
+            application.add_handler(CallbackQueryHandler(handle_clipboard_callback, pattern="^copy_"))
+            application.add_handler(CallbackQueryHandler(handle_zombie_callback, pattern="^z(kill|allow|ignore)_"))
+            application.add_handler(MessageHandler(filters.TEXT, handle_message))
+
         application.run_polling()
+            
     except Exception as e:
         print(f"❌ Critical Error: {e}")
