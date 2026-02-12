@@ -1,53 +1,58 @@
 @echo off
-chcp 65001 >nul
 setlocal EnableDelayedExpansion
 
+:: Set encoding to UTF-8
+chcp 65001 >nul 2>&1
+
+:: --- PREMIUM COLOR INITIALIZATION ---
+for /f %%a in ('echo prompt $E ^| cmd') do set "ESC=%%a"
+set "C_RST=%ESC%[0m"
+set "C_CYN=%ESC%[36m"
+set "C_BCYN=%ESC%[96m"
+set "C_MAG=%ESC%[35m"
+set "C_BMAG=%ESC%[95m"
+set "C_GRN=%ESC%[32m"
+set "C_RED=%ESC%[31m"
+set "C_YLW=%ESC%[33m"
+set "C_GRAY=%ESC%[90m"
+
 cd /d "%~dp0"
-title ⚡ ZYRON ASSISTANT - PREMIUM SETUP ⚡
-color 0D
+title ⚡ ZYRON ASSISTANT — PREMIUM SETUP ⚡
 
 cls
+:: Render Big Zyron Logo using single-line stable PowerShell call
+powershell -NoProfile -Command "Write-Host ' '; Write-Host '   .──────────────────────────────────────────────────────────.' -ForegroundColor Magenta; Write-Host '   │                                                          │' -ForegroundColor Magenta; Write-Host '   │   ███████╗██╗   ██╗██████╗  ██████╗ ███╗   ██╗           │' -ForegroundColor Magenta; Write-Host '   │   ╚══███╔╝╚██╗ ██╔╝██╔══██╗██╔═══██╗████╗  ██║           │' -ForegroundColor Magenta; Write-Host '   │     ███╔╝  ╚████╔╝ ██████╔╝██║   ██║██╔██╗ ██║           │' -ForegroundColor Magenta; Write-Host '   │    ███╔╝    ╚██╔╝  ██╔══██╗██║   ██║██║╚██╗██║           │' -ForegroundColor Magenta; Write-Host '   │   ███████╗   ██║   ██║  ██║╚██████╔╝██║ ╚████║           │' -ForegroundColor Magenta; Write-Host '   │   ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝           │' -ForegroundColor Magenta; Write-Host '   │                                                          │' -ForegroundColor Magenta; Write-Host '   │            ⚡ Z Y R O N   A S S I S T A N T ⚡             │' -ForegroundColor Cyan; Write-Host '   │                                                          │' -ForegroundColor Magenta; Write-Host '   ' +  [char]39 + '──────────────────────────────────────────────────────────' + [char]39  -ForegroundColor Magenta"
+
+
 echo.
-echo.
-echo      ███████╗██╗   ██╗██████╗  ██████╗ ███╗   ██╗
-echo      ╚══███╔╝╚██╗ ██╔╝██╔══██╗██╔═══██╗████╗  ██║
-echo        ███╔╝  ╚████╔╝ ██████╔╝██║   ██║██╔██╗ ██║
-echo       ███╔╝    ╚██╔╝  ██╔══██╗██║   ██║██║╚██╗██║
-echo      ███████╗   ██║   ██║  ██║╚██████╔╝██║ ╚████║
-echo      ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
-echo.
-echo            ⚡  Z Y R O N   A S S I S T A N T  ⚡
+echo   %C_CYN%  ══════════════════════════════════════════════════
+echo            %C_BCYN%⚡ SYSTEM INITIALIZATION ENGAGED ⚡%C_CYN%
+echo     ══════════════════════════════════════════════════%C_RST%
 echo.
 
-color 0D
-echo   ═══════════════════════════════════════════════════════════════════════
-echo            ⚡  SYSTEM INITIALIZATION SEQUENCE ENGAGED  ⚡
-echo   ═══════════════════════════════════════════════════════════════════════
-echo.
+:: ===================== STEP 1 - PYTHON CHECK =====================
+echo   %C_CYN%[1/6]%C_RST% Scanning for Python Environment...
 
-:: ===================== STEP 1 =====================
-echo   [1/6] Selecting Python Version...
-
+:: Check for Python 3.11 specifically as it's the target
 py -3.11 --version >nul 2>&1
 if not errorlevel 1 (
     set "PYTHON_CMD=py -3.11"
-    echo   [✓] Found Python 3.11 (via Launcher)
+    echo     %C_GRN%[✓] Found Python 3.11 (via Launcher)%C_RST%
     goto :FoundPython
 )
 
 for /f "tokens=2 delims= " %%v in ('python --version 2^>nul') do set CUR_VER=%%v
 if "!CUR_VER:~0,4!"=="3.11" (
     set "PYTHON_CMD=python"
-    echo   [✓] Default Python is 3.11
+    echo     %C_GRN%[✓] Default Python is 3.11%C_RST%
     goto :FoundPython
 )
 
 if "!CUR_VER:~0,4!"=="3.10" set "PYTHON_CMD=python" & goto :FoundPython
 if "!CUR_VER:~0,4!"=="3.12" set "PYTHON_CMD=python" & goto :FoundPython
 
-color 0C
 echo.
-echo   [X] CRITICAL ERROR: Python 3.11 not found!
+echo     %C_RED%[X] CRITICAL: Python 3.11 not discovered!%C_RST%
 echo.
 pause
 exit /b 1
@@ -55,97 +60,110 @@ exit /b 1
 :FoundPython
 echo.
 
-:: ===================== STEP 2 =====================
-echo   [2/6] Configuring Environment...
+:: ===================== STEP 2 - ENVIRONMENT SETUP =====================
+echo   %C_CYN%[2/6]%C_RST% Configuring Workspace...
 
 if exist venv (
-    echo   [i] Removing old environment to prevent conflicts...
-    rmdir /s /q venv
+    echo     %C_GRAY%[i] Closing active processes...%C_RST%
+    taskkill /f /im python.exe /t >nul 2>&1
+    taskkill /f /im pythonw.exe /t >nul 2>&1
+    timeout /t 1 /nobreak >nul
+    echo     %C_GRAY%[i] Refreshing old files...%C_RST%
+    rmdir /s /q venv >nul 2>&1
+    if exist venv (
+        echo.
+        echo     %C_RED%[!] ERROR: Access Denied to 'venv' folder.%C_RST%
+        echo     %C_YLW%Please close VS Code or any other terminal using this folder.%C_RST%
+        echo.
+        pause
+        exit /b 1
+    )
 )
 
-echo   [+] Creating new environment using Python 3.11...
+echo     %C_YLW%[+] Building virtual environment...%C_RST%
 %PYTHON_CMD% -m venv venv
 
 if errorlevel 1 (
-    color 0C
-    echo   [X] Failed to create environment.
+    echo.
+    echo     %C_RED%[X] Workspace creation FAILED!%C_RST%
+    echo.
     pause
     exit /b 1
 )
-echo   [✓] Environment created.
+echo     %C_GRN%[✓] Workspace ready.%C_RST%
 echo.
 
-:: ===================== STEP 3 =====================
-echo   [3/6] Installing Libraries...
+:: ===================== STEP 3 - DEPENDENCIES =====================
+echo   %C_CYN%[3/6]%C_RST% Deploying Neural Modules...
 call venv\Scripts\activate
 python -m pip install --upgrade pip --quiet
 pip install -e .
 
 if errorlevel 1 (
-    color 0C
-    echo   [X] Install Failed. Check internet.
+    echo.
+    echo     %C_RED%[X] Submodule installation FAILED!%C_RST%
+    echo.
     pause
     exit /b 1
 )
-echo   [✓] Libraries installed.
+echo     %C_GRN%[✓] Systems online.%C_RST%
 echo.
 
-:: ===================== STEP 4 =====================
-echo   [4/6] Checking AI Brain...
-ollama list | findstr /i "qwen2.5-coder:7b" >nul
+:: ===================== STEP 4 - OLLAMA CHECK =====================
+echo   %C_CYN%[4/6]%C_RST% Verifying AI Engine (Ollama)...
+ollama --version >nul 2>&1
 if errorlevel 1 (
-    echo   [!] Downloading Model (This might take time)...
-    ollama pull qwen2.5-coder:7b
+    echo     %C_YLW%[!] Ollama disconnected. Local AI suspended.%C_RST%
+    echo     %C_GRAY%Install manually from ollama.com for full capability.%C_RST%
 ) else (
-    echo   [✓] AI Model ready.
+    echo     %C_GRN%[✓] Neural engine linked.%C_RST%
 )
 echo.
 
-:: ===================== STEP 5 =====================
-echo   [5/6] Creating Silent Launcher...
+:: ===================== STEP 5 - SILENT LAUNCHER =====================
+echo   %C_CYN%[5/6]%C_RST% Configuring Stealth Protocols...
 
 if not exist .env (
     (
         echo TELEGRAM_TOKEN=PASTE_TOKEN_HERE
         echo MODEL_NAME=qwen2.5-coder:7b
     ) > .env
-    echo   [!] Created .env file. PLEASE ADD YOUR TOKEN!
+    echo     %C_YLW%[!] .env generated. TELEGRAM_TOKEN REQUIRED.%C_RST%
 )
 
-:: Create the VBS launcher script
 (
     echo Set WshShell = CreateObject^("WScript.Shell"^)
     echo WshShell.Run chr^(34^) ^& "%~dp0start_zyron.bat" ^& chr^(34^), 0
     echo Set WshShell = Nothing
 ) > run_silent.vbs
 
-echo   [✓] Silent launcher created.
+echo     %C_GRN%[✓] Stealth launcher primed.%C_RST%
 echo.
 
 :: ===================== STEP 6 - AUTO-START SETUP =====================
-echo   [6/6] Configuring Windows Auto-Start...
+echo   %C_CYN%[6/6]%C_RST% Finalizing Startup Sequence...
 
-:: Get the Windows Startup folder path
 set "STARTUP_FOLDER=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 
-:: Remove old startup entries if they exist
-if exist "%STARTUP_FOLDER%\PikachuAgent.lnk" (
-    echo   [i] Removing old startup shortcut...
-    del "%STARTUP_FOLDER%\PikachuAgent.lnk" >nul 2>&1
+:: Cleanup old entries
+if exist "%STARTUP_FOLDER%\PikachuAgent.lnk" del "%STARTUP_FOLDER%\PikachuAgent.lnk" >nul 2>&1
+if exist "%STARTUP_FOLDER%\ZyronAssistant.lnk" del "%STARTUP_FOLDER%\ZyronAssistant.lnk" >nul 2>&1
+
+echo.
+echo     %C_BCYN%[?] SYSTEM PROMPT:%C_RST%
+echo     %C_CYN%Activate automatic resonance on PC boot?%C_RST%
+echo.
+choice /c YN /m "     Enable Autostart? "
+
+if errorlevel 2 (
+    echo.
+    echo     %C_GRAY%[-] Startup resonance bypassed.%C_RST%
+    goto :FinishSetup
 )
 
-if exist "%STARTUP_FOLDER%\Pikachu.lnk" (
-    del "%STARTUP_FOLDER%\Pikachu.lnk" >nul 2>&1
-)
+echo.
+echo     %C_YLW%[+] Deploying startup artifact...%C_RST%
 
-if exist "%STARTUP_FOLDER%\run_silent.vbs" (
-    del "%STARTUP_FOLDER%\run_silent.vbs" >nul 2>&1
-)
-
-:: Create a VBS script to generate the shortcut
-echo   [+] Creating startup shortcut...
-
-:: This VBS script will create a proper Windows shortcut
 (
     echo Set WshShell = WScript.CreateObject^("WScript.Shell"^)
     echo Set oShellLink = WshShell.CreateShortcut^("%STARTUP_FOLDER%\ZyronAssistant.lnk"^)
@@ -156,37 +174,35 @@ echo   [+] Creating startup shortcut...
     echo oShellLink.Save
 ) > create_startup_shortcut.vbs
 
-:: Execute the VBS script to create the shortcut
 cscript //nologo create_startup_shortcut.vbs
-
-:: Clean up the temporary VBS script
 del create_startup_shortcut.vbs
 
-:: Verify the shortcut was created
 if exist "%STARTUP_FOLDER%\ZyronAssistant.lnk" (
-    echo   [✓] Auto-start configured successfully!
-    echo   [✓] Zyron will now start automatically on Windows boot/restart.
+    echo     %C_GRN%[✓] Autostart successfully armed!%C_RST%
 ) else (
-    color 0C
-    echo   [!] Warning: Auto-start shortcut creation failed.
-    echo   [!] You may need to manually copy run_silent.vbs to the Startup folder.
-    echo.
-    echo   Startup folder location:
-    echo   %STARTUP_FOLDER%
+    echo     %C_RED%[!] Warning: Shortcut deployment failed.%C_RST%
 )
 
+:FinishSetup
 echo.
-echo   ══════════════════════════════════════════════════════════════════════
-echo                   ✅  SETUP COMPLETE — ZYRON IS READY
-echo   ══════════════════════════════════════════════════════════════════════
+echo   %C_MAG%  ══════════════════════════════════════════════════
+echo                %C_BMAG%✅ SYSTEM READY — ZYRON ACTIVE%C_MAG%
+echo     ══════════════════════════════════════════════════%C_RST%
 echo.
-echo   🎯 IMPORTANT NEXT STEPS:
-echo   ───────────────────────────────────────────────────────────────────────
-echo   1. Open the .env file and add your TELEGRAM_TOKEN
-echo   2. The assistant will now start automatically on every boot/restart
-echo   3. To start manually now, run: run_silent.vbs
-echo   4. To disable auto-start, delete: 
-echo      "%STARTUP_FOLDER%\ZyronAssistant.lnk"
-echo   ══════════════════════════════════════════════════════════════════════
+echo   %C_BCYN%  🎯 MISSION PARAMETERS:%C_RST%
+echo   %C_CYN%  ──────────────────────────────────────────────────%C_RST%
+
+call :Typewriter "   - Credentials: Check .env for Telegram Token"
+call :Typewriter "   - Quick Launch: Run run_silent.vbs"
+call :Typewriter "   - Management: Rerun setup to reconfigure"
+
+echo   %C_CYN%  ──────────────────────────────────────────────────%C_RST%
 echo.
 pause
+exit /b
+
+:Typewriter
+set "text=%~1"
+powershell -NoProfile -Command "$text='%text%'; for ($i=0; $i -lt $text.Length; $i++) { Write-Host $text[$i] -ForegroundColor Cyan -NoNewline; Start-Sleep -Milliseconds 15 }"
+echo.
+exit /b

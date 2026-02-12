@@ -28,7 +28,8 @@ whitelist = []
 reaper_active = False
 reaper_thread = None
 
-WHITELIST_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "utils", "zombie_whitelist.json")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+WHITELIST_FILE = os.path.join(PROJECT_ROOT, "saved_media", "zombie_whitelist.json")
 
 def load_whitelist():
     global whitelist
