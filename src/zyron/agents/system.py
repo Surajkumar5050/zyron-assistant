@@ -17,6 +17,12 @@ import zyron.agents.researcher as researcher
 from src.zyron.utils.settings import settings
 from datetime import datetime
 
+# Audio control imports for media functions
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+
+
 PROCESS_NAMES = {
     # Browsers
     "chrome": "chrome.exe", "googlechrome": "chrome.exe", "google": "chrome.exe",
@@ -656,6 +662,70 @@ def system_panic():
         print(f"❌ Panic mode error: {e}")
 
 
+def control_media(action):
+    """
+    Control media playback using Windows media keys.
+    Supported actions: 'playpause', 'nexttrack', 'prevtrack', 'volumemute'
+    """
+    print(f"🎵 Media Control: {action}")
+    
+    try:
+        if action in ['playpause', 'nexttrack', 'prevtrack', 'volumemute']:
+            pyautogui.press(action)
+            return f"✅ Media: {action} executed"
+        else:
+            return f"❌ Unknown media action: {action}"
+    except Exception as e:
+        print(f"❌ Media control error: {e}")
+        return f"Error controlling media: {e}"
+
+
+def set_volume(level):
+    """
+    Set system volume to a specific percentage (0-100).
+    Uses pycaw for precise control. Falls back gracefully if pycaw fails.
+    """
+    print(f"🔊 Setting volume to {level}%")
+    
+    try:
+        # Validate input
+        if not isinstance(level, (int, float)):
+            return "❌ Volume level must be a number"
+        
+        level = int(level)
+        if not 0 <= level <= 100:
+            return "❌ Volume must be between 0 and 100"
+        
+        # Try pycaw for precise control
+        try:
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            
+            # Convert percentage to scalar (0.0 to 1.0)
+            volume_scalar = level / 100.0
+            volume.SetMasterVolumeLevelScalar(volume_scalar, None)
+            
+            print(f"✅ Volume set to {level}% via pycaw")
+            return f"🔊 Volume set to {level}%"
+            
+        except Exception as pycaw_error:
+            print(f"⚠️ pycaw failed: {pycaw_error}")
+            print("   Falling back to volumemute for safety...")
+            
+            # Fallback: Just mute if we can't set precise volume
+            if level == 0:
+                pyautogui.press('volumemute')
+                return "🔇 Volume muted (pycaw unavailable)"
+            else:
+                return f"⚠️ Could not set volume to {level}% (audio device error)"
+    
+    except Exception as e:
+        print(f"❌ Volume control error: {e}")
+        return f"Error setting volume: {e}"
+
+
+
 def execute_command(cmd_json):
     """
     Main dispatcher for Zyron commands.
@@ -709,6 +779,15 @@ def _single_execute(cmd_json):
         val = cmd_json.get("value")
         if feature == "brightness": set_brightness(val)
     elif action == "open_file": open_file_path(cmd_json.get("path"))
+    
+    # Media control actions
+    elif action == "control_media":
+        media_action = cmd_json.get("media_action")  # e.g., 'playpause', 'nexttrack', 'prevtrack'
+        return control_media(media_action)
+    elif action == "set_volume":
+        level = cmd_json.get("level")  # 0-100
+        return set_volume(level)
+
 
     elif action == "get_activities":
         return activity_monitor.get_current_activities()
