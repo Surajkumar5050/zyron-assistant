@@ -18,9 +18,7 @@ from src.zyron.utils.settings import settings
 from datetime import datetime
 
 # Audio control imports for media functions
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from pycaw.pycaw import AudioUtilities
 
 
 PROCESS_NAMES = {
@@ -699,8 +697,8 @@ def set_volume(level):
         # Try pycaw for precise control
         try:
             devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            # Use EndpointVolume property(not Activate method in newer pycaw)
+            volume = devices.EndpointVolume
             
             # Convert percentage to scalar (0.0 to 1.0)
             volume_scalar = level / 100.0
