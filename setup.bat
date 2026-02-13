@@ -33,7 +33,28 @@ echo.
 :: ===================== STEP 1 - PYTHON CHECK =====================
 echo   !C_CYN![1/6]!C_RST! Scanning for Python Environment...
 
-:: Check for Python 3.11 specifically as it's the target
+:: First, try python command directly
+python --version >nul 2>&1
+if not errorlevel 1 (
+    for /f "tokens=2 delims= " %%v in ('python --version 2^>nul') do set CUR_VER=%%v
+    if "!CUR_VER:~0,4!"=="3.11" (
+        set "PYTHON_CMD=python"
+        echo     !C_GRN![✓] Found Python 3.11!C_RST!
+        goto :FoundPython
+    )
+    if "!CUR_VER:~0,4!"=="3.10" (
+        set "PYTHON_CMD=python"
+        echo     !C_GRN![✓] Found Python 3.10 ^(Compatible^)!C_RST!
+        goto :FoundPython
+    )
+    if "!CUR_VER:~0,4!"=="3.12" (
+        set "PYTHON_CMD=python"
+        echo     !C_GRN![✓] Found Python 3.12 ^(Compatible^)!C_RST!
+        goto :FoundPython
+    )
+)
+
+:: Try py launcher as fallback
 py -3.11 --version >nul 2>&1
 if not errorlevel 1 (
     set "PYTHON_CMD=py -3.11"
@@ -41,18 +62,23 @@ if not errorlevel 1 (
     goto :FoundPython
 )
 
-for /f "tokens=2 delims= " %%v in ('python --version 2^>nul') do set CUR_VER=%%v
-if "!CUR_VER:~0,4!"=="3.11" (
-    set "PYTHON_CMD=python"
-    echo     !C_GRN![✓] Default Python is 3.11!C_RST!
+py -3.10 --version >nul 2>&1
+if not errorlevel 1 (
+    set "PYTHON_CMD=py -3.10"
+    echo     !C_GRN![✓] Found Python 3.10 ^(via Launcher^)!C_RST!
     goto :FoundPython
 )
 
-if "!CUR_VER:~0,4!"=="3.10" set "PYTHON_CMD=python" & goto :FoundPython
-if "!CUR_VER:~0,4!"=="3.12" set "PYTHON_CMD=python" & goto :FoundPython
+py -3.12 --version >nul 2>&1
+if not errorlevel 1 (
+    set "PYTHON_CMD=py -3.12"
+    echo     !C_GRN![✓] Found Python 3.12 ^(via Launcher^)!C_RST!
+    goto :FoundPython
+)
 
 echo.
-echo     !C_RED![X] CRITICAL: Python 3.11 not discovered!!C_RST!
+echo     !C_RED![X] CRITICAL: Python 3.10+ not found!!C_RST!
+echo     !C_YLW!Please install Python from python.org!C_RST!
 echo.
 pause
 exit /b 1
@@ -61,74 +87,74 @@ exit /b 1
 echo.
 
 :: ===================== STEP 2 - ENVIRONMENT SETUP =====================
-echo   !C_![2/6]!C_! Configuring Workspace...
+echo   !C_CYN![2/6]!C_RST! Configuring Workspace...
 
 if exist venv (
-    echo     !C_![i] Closing active processes...!C_!
+    echo     !C_YLW![i] Closing active processes...!C_RST!
     taskkill /f /im python.exe /t >nul 2>&1
     taskkill /f /im pythonw.exe /t >nul 2>&1
     timeout /t 1 /nobreak >nul
-    echo     !C_![i] Refreshing old files...!C_!
+    echo     !C_YLW![i] Refreshing old files...!C_RST!
     rmdir /s /q venv >nul 2>&1
     if exist venv (
         echo.
-        echo     !C_![!] ERROR: Access Denied to 'venv' folder.!C_!
-        echo     !C_!Please close VS Code or any other terminal using this folder.!C_!
+        echo     !C_RED![!] ERROR: Access Denied to 'venv' folder.!C_RST!
+        echo     !C_YLW!Please close VS Code or any other terminal using this folder.!C_RST!
         echo.
         pause
         exit /b 1
     )
 )
 
-echo     !C_![+] Building virtual environment...!C_!
+echo     !C_CYN![+] Building virtual environment...!C_RST!
 %PYTHON_CMD% -m venv venv
 
 if errorlevel 1 (
     echo.
-    echo     !C_![X] Workspace creation FAILED!!C_!
+    echo     !C_RED![X] Workspace creation FAILED!!C_RST!
     echo.
     pause
     exit /b 1
 )
-echo     !C_![✓] Workspace ready.!C_!
+echo     !C_GRN![✓] Workspace ready.!C_RST!
 echo.
 
 :: ===================== STEP 3 - DEPENDENCIES =====================
-echo   !C_![3/6]!C_! Deploying Neural Modules...
+echo   !C_CYN![3/6]!C_RST! Deploying Neural Modules...
 call venv\Scripts\activate
 python -m pip install --upgrade pip --quiet
 pip install -e .
 
 if errorlevel 1 (
     echo.
-    echo     !C_![X] Submodule installation FAILED!!C_!
+    echo     !C_RED![X] Submodule installation FAILED!!C_RST!
     echo.
     pause
     exit /b 1
 )
-echo     !C_![✓] Systems online.!C_!
+echo     !C_GRN![✓] Systems online.!C_RST!
 echo.
 
 :: ===================== STEP 4 - OLLAMA CHECK =====================
-echo   !C_![4/6]!C_! Verifying AI Engine (Ollama)...
+echo   !C_CYN![4/6]!C_RST! Verifying AI Engine (Ollama)...
 ollama --version >nul 2>&1
 if errorlevel 1 (
-    echo     !C_![!] Ollama disconnected. Local AI suspended.!C_!
-    echo     !C_!Install manually from ollama.com for full capability.!C_!
+    echo     !C_YLW![!] Ollama disconnected. Local AI suspended.!C_RST!
+    echo     !C_YLW!Install manually from ollama.com for full capability.!C_RST!
 ) else (
-    echo     !C_![✓] Neural engine linked.!C_!
+    echo     !C_GRN![✓] Neural engine linked.!C_RST!
 )
 echo.
 
 :: ===================== STEP 5 - SILENT LAUNCHER =====================
-echo   !C_![5/6]!C_! Configuring Stealth Protocols...
+echo   !C_CYN![5/6]!C_RST! Configuring Stealth Protocols...
 
 if not exist .env (
     (
         echo TELEGRAM_TOKEN=PASTE_TOKEN_HERE
         echo MODEL_NAME=qwen2.5-coder:7b
     ) > .env
-    echo     !C_![!] .env generated. TELEGRAM_TOKEN REQUIRED.!C_!
+    echo     !C_YLW![!] .env generated. TELEGRAM_TOKEN REQUIRED.!C_RST!
 )
 
 (
@@ -137,11 +163,11 @@ if not exist .env (
     echo Set WshShell = Nothing
 ) > run_silent.vbs
 
-echo     !C_![✓] Stealth launcher primed.!C_!
+echo     !C_GRN![✓] Stealth launcher primed.!C_RST!
 echo.
 
 :: ===================== STEP 6 - AUTO-START SETUP =====================
-echo   !C_![6/6]!C_! Finalizing Startup Sequence...
+echo   !C_CYN![6/6]!C_RST! Finalizing Startup Sequence...
 
 set "STARTUP_FOLDER=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 
@@ -150,19 +176,19 @@ if exist "%STARTUP_FOLDER%\PikachuAgent.lnk" del "%STARTUP_FOLDER%\PikachuAgent.
 if exist "%STARTUP_FOLDER%\ZyronAssistant.lnk" del "%STARTUP_FOLDER%\ZyronAssistant.lnk" >nul 2>&1
 
 echo.
-echo     !C_![?] SYSTEM PROMPT:!C_!
-echo     !C_!Activate automatic resonance on PC boot?!C_!
+echo     !C_CYN![?] SYSTEM PROMPT:!C_RST!
+echo     !C_BCYN!Activate automatic resonance on PC boot?!C_RST!
 echo.
 choice /c YN /m "     Enable Autostart? "
 
 if errorlevel 2 (
     echo.
-    echo     !C_![-] Startup resonance bypassed.!C_!
+    echo     !C_YLW![-] Startup resonance bypassed.!C_RST!
     goto :FinishSetup
 )
 
 echo.
-echo     !C_![+] Deploying startup artifact...!C_!
+echo     !C_CYN![+] Deploying startup artifact...!C_RST!
 
 (
     echo Set WshShell = WScript.CreateObject^("WScript.Shell"^)
@@ -178,25 +204,25 @@ cscript //nologo create_startup_shortcut.vbs
 del create_startup_shortcut.vbs
 
 if exist "%STARTUP_FOLDER%\ZyronAssistant.lnk" (
-    echo     !C_![✓] Autostart successfully armed!!C_!
+    echo     !C_GRN![✓] Autostart successfully armed!!C_RST!
 ) else (
-    echo     !C_![!] Warning: Shortcut deployment failed.!C_!
+    echo     !C_YLW![!] Warning: Shortcut deployment failed.!C_RST!
 )
 
 :FinishSetup
 echo.
-echo   !C_!  ══════════════════════════════════════════════════
-echo                !C_!✅ SYSTEM READY — ZYRON ACTIVE!C_!
-echo     ══════════════════════════════════════════════════!C_!
+echo   !C_CYN!  ══════════════════════════════════════════════════
+echo                !C_BCYN!✅ SYSTEM READY — ZYRON ACTIVE!C_RST!
+echo     ══════════════════════════════════════════════════!C_RST!
 echo.
-echo   !C_!  🎯 MISSION PARAMETERS:!C_!
-echo   !C_!  ──────────────────────────────────────────────────!C_!
+echo   !C_BCYN!  🎯 MISSION PARAMETERS:!C_RST!
+echo   !C_CYN!  ──────────────────────────────────────────────────!C_RST!
 
 call :Typewriter "   - Credentials: Check .env for Telegram Token"
 call :Typewriter "   - Quick Launch: Run run_silent.vbs"
 call :Typewriter "   - Management: Rerun setup to reconfigure"
 
-echo   !C_!  ──────────────────────────────────────────────────!C_!
+echo   !C_CYN!  ──────────────────────────────────────────────────!C_RST!
 echo.
 pause
 exit /b
@@ -206,4 +232,3 @@ set "text=%~1"
 powershell -NoProfile -Command "$text='%text%'; for ($i=0; $i -lt $text.Length; $i++) { Write-Host $text[$i] -ForegroundColor Cyan -NoNewline; Start-Sleep -Milliseconds 15 }"
 echo.
 exit /b
-
