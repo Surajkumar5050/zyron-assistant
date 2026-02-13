@@ -4,6 +4,8 @@ import os
 import subprocess
 import sqlite3
 import shutil
+import platform
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 import time
@@ -68,18 +70,21 @@ def get_chrome_tabs():
     tabs = []
     
     try:
-        # Chrome user data path
-        chrome_path = os.path.join(
-            os.environ.get('LOCALAPPDATA', ''),
-            'Google', 'Chrome', 'User Data', 'Default'
-        )
+        # Chrome user data path (cross-platform)
+        if platform.system() == "Windows":
+            chrome_path = os.path.join(
+                os.environ.get('LOCALAPPDATA', ''),
+                'Google', 'Chrome', 'User Data', 'Default'
+            )
+        else:  # Linux
+            chrome_path = os.path.expanduser('~/.config/google-chrome/Default')
         
         # Try to read History file
         history_db = os.path.join(chrome_path, 'History')
         
         if os.path.exists(history_db):
             # Copy to temp to avoid locking
-            temp_db = os.path.join(os.environ.get('TEMP', ''), 'chrome_history_temp.db')
+            temp_db = os.path.join(tempfile.gettempdir(), 'chrome_history_temp.db')
             try:
                 shutil.copy2(history_db, temp_db)
                 
@@ -126,16 +131,19 @@ def get_brave_tabs():
     tabs = []
     
     try:
-        # Brave user data path
-        brave_path = os.path.join(
-            os.environ.get('LOCALAPPDATA', ''),
-            'BraveSoftware', 'Brave-Browser', 'User Data', 'Default'
-        )
+        # Brave user data path (cross-platform)
+        if platform.system() == "Windows":
+            brave_path = os.path.join(
+                os.environ.get('LOCALAPPDATA', ''),
+                'BraveSoftware', 'Brave-Browser', 'User Data', 'Default'
+            )
+        else:  # Linux
+            brave_path = os.path.expanduser('~/.config/BraveSoftware/Brave-Browser/Default')
         
         history_db = os.path.join(brave_path, 'History')
         
         if os.path.exists(history_db):
-            temp_db = os.path.join(os.environ.get('TEMP', ''), 'brave_history_temp.db')
+            temp_db = os.path.join(tempfile.gettempdir(), 'brave_history_temp.db')
             try:
                 shutil.copy2(history_db, temp_db)
                 
@@ -179,16 +187,19 @@ def get_edge_tabs():
     tabs = []
     
     try:
-        # Edge user data path
-        edge_path = os.path.join(
-            os.environ.get('LOCALAPPDATA', ''),
-            'Microsoft', 'Edge', 'User Data', 'Default'
-        )
+        # Edge user data path (cross-platform)
+        if platform.system() == "Windows":
+            edge_path = os.path.join(
+                os.environ.get('LOCALAPPDATA', ''),
+                'Microsoft', 'Edge', 'User Data', 'Default'
+            )
+        else:  # Linux
+            edge_path = os.path.expanduser('~/.config/microsoft-edge/Default')
         
         history_db = os.path.join(edge_path, 'History')
         
         if os.path.exists(history_db):
-            temp_db = os.path.join(os.environ.get('TEMP', ''), 'edge_history_temp.db')
+            temp_db = os.path.join(tempfile.gettempdir(), 'edge_history_temp.db')
             try:
                 shutil.copy2(history_db, temp_db)
                 
@@ -232,7 +243,7 @@ def get_firefox_tabs():
     tabs = []
     
     # Try Native Bridge first (Real-time data)
-    temp_path = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_tabs.json'
+    temp_path = Path(tempfile.gettempdir()) / 'zyron_firefox_tabs.json'
     if temp_path.exists():
         try:
             mtime = temp_path.stat().st_mtime
@@ -254,11 +265,14 @@ def get_firefox_tabs():
             print(f"Error reading Firefox Native Bridge data: {e}")
 
     try:
-        # Firefox profiles path
-        firefox_path = os.path.join(
-            os.environ.get('APPDATA', ''),
-            'Mozilla', 'Firefox', 'Profiles'
-        )
+        # Firefox profiles path (cross-platform)
+        if platform.system() == "Windows":
+            firefox_path = os.path.join(
+                os.environ.get('APPDATA', ''),
+                'Mozilla', 'Firefox', 'Profiles'
+            )
+        else:  # Linux
+            firefox_path = os.path.expanduser('~/.mozilla/firefox')
         
         if not os.path.exists(firefox_path):
             return tabs
@@ -272,7 +286,7 @@ def get_firefox_tabs():
                 places_db = os.path.join(profile_path, 'places.sqlite')
                 
                 if os.path.exists(places_db):
-                    temp_db = os.path.join(os.environ.get('TEMP', ''), 'firefox_places_temp.db')
+                    temp_db = os.path.join(tempfile.gettempdir(), 'firefox_places_temp.db')
                     try:
                         shutil.copy2(places_db, temp_db)
                         

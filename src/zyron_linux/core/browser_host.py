@@ -2,6 +2,7 @@ import sys
 import json
 import struct
 import os
+import tempfile
 from pathlib import Path
 
 # The native messaging host must read and write from/to stdin/stdout.
@@ -27,7 +28,7 @@ import threading
 import time
 
 # --- Command Queue Logic ---
-COMMAND_FILE_PATH = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_commands.json'
+COMMAND_FILE_PATH = Path(tempfile.gettempdir()) / 'zyron_firefox_commands.json'
 
 def poll_command_queue():
     """Background thread to check for commands from Zyron."""
@@ -79,7 +80,7 @@ def main():
             elif message.get("action") == "update_tabs":
                 # For now, we'll just save this to a local file that activity.py can read
                 # In the future, we might use a faster IPC or shared memory
-                temp_path = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_tabs.json'
+                temp_path = Path(tempfile.gettempdir()) / 'zyron_firefox_tabs.json'
                 try:
                     with open(temp_path, 'w') as f:
                         json.dump(message.get("tabs", []), f)
@@ -96,7 +97,7 @@ def main():
                         header, encoded = data_url.split(",", 1)
                         img_data = base64.b64decode(encoded)
                         
-                        shot_path = Path(os.environ.get('TEMP', '')) / 'zyron_tab_screenshot.png'
+                        shot_path = Path(tempfile.gettempdir()) / 'zyron_tab_screenshot.png'
                         with open(shot_path, 'wb') as f:
                             f.write(img_data)
                             
@@ -110,7 +111,7 @@ def main():
                 
     except Exception as e:
         # We can't easily log to a console, so we might want to log to a file
-        log_path = Path(os.environ.get('TEMP', '')) / 'zyron_native_host_error.log'
+        log_path = Path(tempfile.gettempdir()) / 'zyron_native_host_error.log'
         with open(log_path, 'a') as f:
             f.write(f"Error: {str(e)}\n")
 
