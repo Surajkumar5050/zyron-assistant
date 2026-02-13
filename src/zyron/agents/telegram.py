@@ -91,7 +91,7 @@ def get_main_keyboard():
         [KeyboardButton("/location"), KeyboardButton("/recordaudio")],
         [KeyboardButton("/clear_bin"), KeyboardButton("/storage")], 
         [KeyboardButton("/activities"), KeyboardButton("/copied_texts")],
-        [KeyboardButton("/focus_mode_on"), KeyboardButton("/blacklist")]
+        [KeyboardButton("/media"), KeyboardButton("/focus_mode_on"), KeyboardButton("/blacklist")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -243,14 +243,39 @@ async def handle_media_callback(update: Update, context: ContextTypes.DEFAULT_TY
     # Volume controls handler
     elif data.startswith("vol_"):
         level_str = data.replace("vol_", "")
-        level = int(level_str)
         
-        result = set_volume(level)
+        # Smart mute toggle for vol_0
+        if level_str == "0":
+            from pycaw.pycaw import AudioUtilities
+            
+            # Check current volume to decide mute or unmute
+            try:
+                devices = AudioUtilities.GetSpeakers()
+                volume = devices.EndpointVolume
+                current_level = int(volume.GetMasterVolumeLevelScalar() * 100)
+                
+                if current_level > 0:
+                    # Currently audible, so mute it
+                    result = set_volume(0)
+                    action_msg = "🔇 Muted"
+                else:
+                    # Currently muted, so unmute to 50%
+                    result = set_volume(50)
+                    action_msg = "🔊 Unmuted to 50%"
+            except Exception as e:
+                # Fallback to simple toggle
+                result = control_media("volumemute")
+                action_msg = "🔇 Toggled mute"
+        else:
+            # Regular volume setting
+            level = int(level_str)
+            result = set_volume(level)
+            action_msg = f"🔊 Volume set to {level}%"
         
         # Updates message with confirmation
         try:
             await query.edit_message_text(
-                f"🎵 **Media Controller**\n\n✅ {result}",
+                f"🎵 **Media Controller**\n\n✅ {action_msg}",
                 parse_mode='Markdown',
                 reply_markup=query.message.reply_markup  # Keep the keyboard
             )
