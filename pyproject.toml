@@ -47,6 +47,7 @@ dependencies = [
     "numpy",
     "pyperclip",
     "pydantic-settings>=2.0.0",
+    "pycaw",
 ]
 
 [project.scripts]
