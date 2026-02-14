@@ -8,7 +8,8 @@ import time
 import threading
 import json
 import os
-import ctypes  # Added for Windows API access
+import platform
+import ctypes  # For Windows clipboard optimization
 from datetime import datetime
 
 # File to store clipboard history
@@ -85,14 +86,19 @@ def monitor_clipboard():
     
     print("👁️ Clipboard monitoring started...")
     
-    # [FIX] Setup Windows API to check sequence number without locking
-    try:
-        user32 = ctypes.windll.user32
-        user32.GetClipboardSequenceNumber.restype = ctypes.c_ulong
-        last_sequence_number = user32.GetClipboardSequenceNumber()
-        has_ctypes = True
-    except Exception as e:
-        print(f"⚠️ Windows API not available, falling back to basic polling: {e}")
+    # [FIX] Setup Windows API to check sequence number without locking (Windows only)
+    has_ctypes = False
+    if platform.system() == "Windows":
+        try:
+            user32 = ctypes.windll.user32
+            user32.GetClipboardSequenceNumber.restype = ctypes.c_ulong
+            last_sequence_number = user32.GetClipboardSequenceNumber()
+            has_ctypes = True
+        except Exception as e:
+            print(f"⚠️ Windows API not available, falling back to basic polling: {e}")
+            has_ctypes = False
+    else:
+        # Linux - use simple polling without Windows API
         has_ctypes = False
     
     while monitoring_active:

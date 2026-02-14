@@ -690,7 +690,7 @@ Longitude: {location_data['longitude']}
             query = command_json.get("query", "").lower()
             
             # Helper to find targets
-            import zyron.features.browser_control as browser_control
+            import zyron_linux.features.browser_control as browser_control
             
             # --- SMART MATCHING LOGIC ---
             # 1. Get all open tabs
@@ -741,7 +741,7 @@ Longitude: {location_data['longitude']}
                 tab_title = best_match.get('title')
                 
                 # Save Context for "Play it again"
-                from zyron.core import memory
+                from zyron_linux.core import memory
                 memory.update_context("browser_interaction", tab_title)
                 
                 if tab_id:
@@ -766,7 +766,8 @@ Longitude: {location_data['longitude']}
                         loader = await update.message.reply_text("📸 Capturing tab...", reply_markup=get_main_keyboard())
                         
                         # Wait for file
-                        shot_path = os.path.join(os.environ.get('TEMP', ''), 'zyron_tab_screenshot.png')
+                        import tempfile
+                        shot_path = os.path.join(tempfile.gettempdir(), 'zyron_tab_screenshot.png')
                         
                         # Remove old file if exists to avoid sending stale one
                         if os.path.exists(shot_path):
