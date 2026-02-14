@@ -91,6 +91,7 @@ def get_main_keyboard():
         [KeyboardButton("/location"), KeyboardButton("/recordaudio")],
         [KeyboardButton("/clear_bin"), KeyboardButton("/storage")], 
         [KeyboardButton("/activities"), KeyboardButton("/copied_texts")],
+        [KeyboardButton("☕ Stay Awake"), KeyboardButton("💤 Normal Mode")],
         [KeyboardButton("/media"), KeyboardButton("/focus_mode_on"), KeyboardButton("/blacklist")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -482,6 +483,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=get_main_keyboard()
             )
             return
+    
+    # --- CAFFEINE MODE KEYBOARD BUTTONS ---
+    elif "☕ stay awake" in lower_text:
+        command_json = {"action": "toggle_caffeine", "state": True}
+    elif "💤 normal mode" in lower_text:
+        command_json = {"action": "toggle_caffeine", "state": False}
 
     # --- NAVIGATION AGENT TRIGGERS ---
     elif "/read" in lower_text or "read page" in lower_text:
