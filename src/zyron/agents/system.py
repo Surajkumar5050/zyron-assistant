@@ -16,6 +16,8 @@ import zyron.features.files.finder as file_finder  # Uses the new smart finder w
 import zyron.agents.researcher as researcher
 from src.zyron.utils.settings import settings
 from datetime import datetime
+import threading
+import time
 
 # Audio control imports for media functions
 from pycaw.pycaw import AudioUtilities
@@ -53,6 +55,72 @@ PROCESS_NAMES = {
     "whatsapp": "WhatsApp.exe",
     "zoom": "Zoom.exe"
 }
+
+# Caffeine Mode - Which Keeps system awake by preventing sleep and screen timeout
+CAFFEINE_ACTIVE = False
+
+# Windows constants for SetThreadExecutionState
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+ES_DISPLAY_REQUIRED = 0x00000002
+
+def _caffeine_loop():
+    """
+    Background thread that prevents system sleep and screen timeout.
+    Uses Windows SetThreadExecutionState API for reliable prevention.
+    """
+    global CAFFEINE_ACTIVE
+    import ctypes
+    
+    print("☕ Caffeine thread started - keeping system awake...")
+    
+    # Set execution state to prevent sleep and display timeout
+    ctypes.windll.kernel32.SetThreadExecutionState(
+        ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+    )
+    
+    while CAFFEINE_ACTIVE:
+        # Periodically verify we're still preventing sleep
+        timestamp = time.strftime('%H:%M:%S')
+        print(f"   🔄 Awake check at {timestamp}... (display + system)")
+        time.sleep(60)  # Check every minute
+    
+    # Reset execution state when disabling
+    ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
+    print("💤 Caffeine thread stopped.")
+
+def toggle_caffeine(state: bool):
+    """
+    Enable or disable caffeine mode.
+    
+    Args:
+        state: True to enable, False to disable
+    
+    Returns:
+        Status message for user feedback
+    """
+    global CAFFEINE_ACTIVE
+    
+    if state:
+        # Enable caffeine mode
+        if CAFFEINE_ACTIVE:
+            return "☕ Caffeine Mode is already active. System will stay awake."
+        
+        CAFFEINE_ACTIVE = True
+        
+        # Start background thread (daemon = auto-terminates on exit)
+        jiggler_thread = threading.Thread(target=_caffeine_loop, daemon=True)
+        jiggler_thread.start()
+        
+        return "☕ Caffeine Mode Active. System will stay awake."
+    else:
+        # Disable caffeine mode
+        if not CAFFEINE_ACTIVE:
+            return "💤 Caffeine Mode is already off. System can sleep normally."
+        
+        CAFFEINE_ACTIVE = False
+        print("💤 Stopping caffeine mode...")
+        return "💤 Caffeine Mode Disabled. System can now sleep normally."
 
 def get_laptop_location():
     """
@@ -759,6 +827,10 @@ def _single_execute(cmd_json):
         return record_audio(duration)
     elif action == "clear_recycle_bin": return clear_recycle_bin()
     elif action == "check_storage": return check_storage()
+    
+    elif action == "toggle_caffeine":
+        state = cmd_json.get("state", False)
+        return toggle_caffeine(state)
     
     elif action == "open_url": 
         open_browser(cmd_json.get("url"), cmd_json.get("browser", "default"))

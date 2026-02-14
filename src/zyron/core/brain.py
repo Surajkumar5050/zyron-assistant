@@ -87,7 +87,11 @@ browser_control is ONLY for "close TAB", "mute TAB", or "screenshot TAB" - opera
     - Shutdown: {"action": "shutdown_pc"} (Triggers: shutdown, turn off computer, kill power)
     - Restart:  {"action": "restart_pc"}  (Triggers: restart, reboot, cycle power)
 
-19. Browser Page Interaction: {"action": "browser_nav", "sub_action": "read/scroll/click/type/scan", ...}
+19. Caffeine Mode (Keep Awake): 
+    - Enable:  {"action": "toggle_caffeine", "state": true}  (Triggers: keep awake, don't sleep, stay awake, enable caffeine, disable sleep, caffeine mode on, keep system awake, prevent sleep)
+    - Disable: {"action": "toggle_caffeine", "state": false} (Triggers: go to sleep, disable caffeine, normal mode, can sleep now, caffeine mode off, allow sleep)
+
+20. Browser Page Interaction: {"action": "browser_nav", "sub_action": "read/scroll/click/type/scan", ...}
     *** Use this for interacting with CONTENT ON THE PAGE (buttons, links, forms) ***
     - Read page: {"action": "browser_nav", "sub_action": "read"}
     - Scroll:    {"action": "browser_nav", "sub_action": "scroll", "direction": "down/up/top/bottom"}
@@ -185,7 +189,13 @@ def process_command(user_input):
         elif any(x in lower for x in ["/copied_texts", "copied texts", "clipboard history", "clipboard", "what did i copy", "show copied", "give me copied texts"]):
             data = {"action": "get_clipboard_history"}
 
-        # 10. Browser Control (NEW)
+        # 10. Force Caffeine Mode (Keeping Awake)
+        elif any(x in lower for x in ["keep awake", "don't sleep", "stay awake", "enable caffeine", "disable sleep", "caffeine mode on", "keep system awake", "prevent sleep", "no sleep"]):
+            data = {"action": "toggle_caffeine", "state": True}
+        elif any(x in lower for x in ["go to sleep", "disable caffeine", "normal mode", "can sleep now", "caffeine mode off", "allow sleep", "enable sleep"]):
+            data = {"action": "toggle_caffeine", "state": False}
+
+        # 11. Browser Control (NEW)
         # "Close the youtube tab", "Mute the music"
         elif "close" in lower and ("tab" in lower or "video" in lower):
             # We need to find the TAB ID first. This logic is usually in main.py or telegram.py
