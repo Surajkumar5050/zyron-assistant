@@ -298,7 +298,7 @@ zyron-assistant/
 ```
 
 <div align="center">
-  <img src="markdown_themes/zyron_architecture.svg" alt="ZYRON Architecture" width="100%">
+  <img src="markdown_themes/zyron_architecture.png" alt="ZYRON Architecture" width="100%">
 </div>
 
 ---
