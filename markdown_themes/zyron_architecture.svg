@@ -1,0 +1,481 @@
+<svg viewBox="0 0 2800 3600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+      
+      .bg-primary { fill: #000000; }
+      .bg-section { fill: #0a0a0a; }
+      
+      .box-interface { fill: #0d1b2a; stroke: #2d5a7b; stroke-width: 2; }
+      .box-controller { fill: #1a1a0d; stroke: #6b6b1b; stroke-width: 2; }
+      .box-agent { fill: #0d1a0d; stroke: #2d5a2d; stroke-width: 2; }
+      .box-features { fill: #1a0d1a; stroke: #5a2d5a; stroke-width: 2; }
+      .box-os { fill: #0d0d1a; stroke: #2d2d5a; stroke-width: 2; }
+      
+      .header-text {
+        font-family: 'Roboto', sans-serif;
+        font-size: 44px;
+        font-weight: 700;
+        fill: #ffffff;
+        letter-spacing: -0.3px;
+      }
+      
+      .section-title {
+        font-family: 'Roboto', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        fill: #e0e0e0;
+        letter-spacing: 0.5px;
+      }
+      
+      .subsection-title {
+        font-family: 'Roboto', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        fill: #ffffff;
+        letter-spacing: 0.3px;
+      }
+      
+      .component-title {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 14px;
+        font-weight: 700;
+        fill: #ffffff;
+      }
+      
+      .component-text {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+        font-weight: 400;
+        fill: #c0c0c0;
+      }
+      
+      .description-text {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px;
+        font-weight: 400;
+        fill: #a0a0a0;
+      }
+      
+      .footer-text { 
+        font-family: 'IBM Plex Mono', monospace; 
+        font-size: 11px; 
+        fill: #909090; 
+      }
+      
+      .connector-line { stroke: #3d7a9e; stroke-width: 2; fill: none; }
+      .connector-secondary { stroke: #5a5a2d; stroke-width: 1.5; fill: none; stroke-dasharray: 5,3; }
+      .connector-thick { stroke: #6b6b1b; stroke-width: 2.5; fill: none; }
+      
+      .arrow-marker { fill: #3d7a9e; }
+      .arrow-gold { fill: #6b6b1b; }
+      
+      .grid-line { stroke: #1a1a1a; stroke-width: 0.5; opacity: 0.1; }
+      .divider-line { stroke: #2a2a2a; stroke-width: 1.5; }
+      
+      .label-box { fill: #0a0a0a; stroke: #2a2a2a; stroke-width: 1; }
+      
+      .flow-highlight { fill: none; stroke: #5a5a2d; stroke-width: 2.5; opacity: 0.4; }
+    </style>
+    
+    <defs>
+      <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" class="arrow-marker" />
+      </marker>
+      <marker id="arrow-gold" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" class="arrow-gold" />
+      </marker>
+    </defs>
+  </defs>
+
+  <!-- Background -->
+  <rect width="2800" height="3600" class="bg-primary"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid-pattern" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path d="M 100 0 L 0 0 0 100" class="grid-line"/>
+    </pattern>
+  </defs>
+  <rect width="2800" height="3600" fill="url(#grid-pattern)"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="2800" height="110" class="bg-section" opacity="0.95"/>
+  <line x1="0" y1="110" x2="2800" y2="110" class="divider-line"/>
+  
+  <text x="100" y="65" class="header-text">ZYRON ASSISTANT - BACKEND ARCHITECTURE</text>
+  <text x="100" y="95" class="component-text">Modular Local AI Agent / Event-Driven Concurrency / Multi-Interface Control System</text>
+
+  <!-- Layer indicators -->
+  <g transform="translate(1900, 20)">
+    <text x="0" y="0" class="subsection-title">LAYER ARCHITECTURE</text>
+    
+    <rect x="0" y="20" width="12" height="12" class="box-interface"/>
+    <text x="20" y="29" class="component-text">Interface</text>
+    
+    <rect x="160" y="20" width="12" height="12" class="box-controller"/>
+    <text x="180" y="29" class="component-text">Controller</text>
+    
+    <rect x="320" y="20" width="12" height="12" class="box-agent"/>
+    <text x="340" y="29" class="component-text">Agent</text>
+    
+    <rect x="0" y="50" width="12" height="12" class="box-features"/>
+    <text x="20" y="59" class="component-text">Features</text>
+    
+    <rect x="160" y="50" width="12" height="12" class="box-os"/>
+    <text x="180" y="59" class="component-text">OS/Hardware</text>
+  </g>
+
+  <!-- Main content area -->
+  <g transform="translate(0, 140)">
+
+    <!-- LAYER 1: INTERFACE LAYER -->
+    <text x="100" y="40" class="section-title">LAYER 1: INTERFACE INPUT SOURCES</text>
+    <line x1="100" y1="55" x2="2700" y2="55" class="divider-line"/>
+
+    <!-- Voice Input Box -->
+    <rect x="100" y="80" width="600" height="240" rx="6" class="box-interface"/>
+    <rect x="120" y="95" width="560" height="28" fill="#0d1b2a" stroke="none" rx="3"/>
+    <text x="400" y="117" class="component-title" text-anchor="middle">VOICE INPUT SYSTEM</text>
+    
+    <rect x="130" y="135" width="270" height="75" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="265" y="158" class="component-title" text-anchor="middle">voice.py</text>
+    <text x="265" y="176" class="description-text" text-anchor="middle">Microphone Input</text>
+    <text x="265" y="191" class="description-text" text-anchor="middle">Speech Recognition</text>
+    <text x="265" y="206" class="description-text" text-anchor="middle">Audio Output</text>
+    
+    <rect x="420" y="135" width="270" height="75" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="555" y="158" class="component-title" text-anchor="middle">wake_word.py</text>
+    <text x="555" y="176" class="description-text" text-anchor="middle">Vosk Engine</text>
+    <text x="555" y="191" class="description-text" text-anchor="middle">Background Detection</text>
+    <text x="555" y="206" class="description-text" text-anchor="middle">Activation Trigger</text>
+    
+    <path d="M 400 172 L 420 172" class="connector-secondary" marker-end="url(#arrow-blue)"/>
+
+    <!-- Telegram Interface Box -->
+    <rect x="730" y="80" width="600" height="240" rx="6" class="box-interface"/>
+    <rect x="750" y="95" width="560" height="28" fill="#0d1b2a" stroke="none" rx="3"/>
+    <text x="1030" y="117" class="component-title" text-anchor="middle">TELEGRAM BOT INTERFACE</text>
+    
+    <rect x="760" y="135" width="270" height="75" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="895" y="158" class="component-title" text-anchor="middle">telegram.py</text>
+    <text x="895" y="176" class="description-text" text-anchor="middle">Message Handler</text>
+    <text x="895" y="191" class="description-text" text-anchor="middle">Command Parser</text>
+    <text x="895" y="206" class="description-text" text-anchor="middle">Response Formatter</text>
+    
+    <rect x="1050" y="135" width="270" height="75" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="1185" y="158" class="component-title" text-anchor="middle">API Gateway</text>
+    <text x="1185" y="176" class="description-text" text-anchor="middle">Telegram API</text>
+    <text x="1185" y="191" class="description-text" text-anchor="middle">Polling Loop</text>
+    <text x="1185" y="206" class="description-text" text-anchor="middle">Message Queue</text>
+    
+    <path d="M 1030 172 L 1050 172" class="connector-secondary" marker-end="url(#arrow-blue)"/>
+
+    <!-- Browser Extensions Box -->
+    <rect x="1360" y="80" width="600" height="240" rx="6" class="box-interface"/>
+    <rect x="1380" y="95" width="560" height="28" fill="#0d1b2a" stroke="none" rx="3"/>
+    <text x="1660" y="117" class="component-title" text-anchor="middle">BROWSER EXTENSIONS</text>
+    
+    <rect x="1390" y="135" width="270" height="75" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="1525" y="158" class="component-title" text-anchor="middle">Chrome Extension</text>
+    <text x="1525" y="176" class="description-text" text-anchor="middle">Tab Tracking</text>
+    <text x="1525" y="191" class="description-text" text-anchor="middle">URL Monitoring</text>
+    <text x="1525" y="206" class="description-text" text-anchor="middle">Content Capture</text>
+    
+    <rect x="1680" y="135" width="270" height="75" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="1815" y="158" class="component-title" text-anchor="middle">Firefox Extension</text>
+    <text x="1815" y="176" class="description-text" text-anchor="middle">Tab Tracking</text>
+    <text x="1815" y="191" class="description-text" text-anchor="middle">URL Monitoring</text>
+    <text x="1815" y="206" class="description-text" text-anchor="middle">Content Capture</text>
+    
+    <path d="M 1660 172 L 1680 172" class="connector-secondary" marker-end="url(#arrow-blue)"/>
+
+    <!-- System Entry Points Box -->
+    <rect x="1990" y="80" width="610" height="240" rx="6" class="box-interface"/>
+    <rect x="2010" y="95" width="570" height="28" fill="#0d1b2a" stroke="none" rx="3"/>
+    <text x="2295" y="117" class="component-title" text-anchor="middle">SYSTEM ENTRY POINTS</text>
+    
+    <rect x="2020" y="135" width="265" height="60" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="2152" y="158" class="description-text" text-anchor="middle">start_zyron.bat</text>
+    <text x="2152" y="177" class="description-text" text-anchor="middle">Standard Launch</text>
+    
+    <rect x="2305" y="135" width="265" height="60" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="2437" y="158" class="description-text" text-anchor="middle">run_silent.vbs</text>
+    <text x="2437" y="177" class="description-text" text-anchor="middle">Stealth Mode</text>
+    
+    <rect x="2020" y="205" width="550" height="70" rx="4" fill="#081420" stroke="#2d5a7b" stroke-width="1"/>
+    <text x="2295" y="228" class="component-text" text-anchor="middle">main.py - Core Bootstrap and System Initialization</text>
+    <text x="2295" y="249" class="description-text" text-anchor="middle">Environment Loading / Memory Manager Init / Brain Startup</text>
+
+    <!-- Data flows from Interface to Controller -->
+    <path d="M 400 320 L 400 380" class="connector-line" marker-end="url(#arrow-blue)"/>
+    <path d="M 1030 320 L 1030 380" class="connector-line" marker-end="url(#arrow-blue)"/>
+    <path d="M 1660 320 L 1660 380" class="connector-line" marker-end="url(#arrow-blue)"/>
+    <path d="M 2295 320 L 1030 380" class="connector-secondary" marker-end="url(#arrow-blue)"/>
+
+    <!-- LAYER 2: CONTROLLER LAYER -->
+    <text x="100" y="440" class="section-title">LAYER 2: CONTROLLER - BRAIN INFERENCE ENGINE</text>
+    <line x1="100" y1="460" x2="2700" y2="460" class="divider-line"/>
+
+    <rect x="100" y="480" width="2600" height="220" rx="6" class="box-controller"/>
+    <rect x="120" y="498" width="2560" height="28" fill="#1a1a0d" stroke="none" rx="3"/>
+    <text x="1400" y="520" class="component-title" text-anchor="middle">BRAIN CORE MODULE (brain.py) - CENTRAL DECISION ENGINE</text>
+
+    <!-- Inference Engine -->
+    <rect x="130" y="540" width="600" height="140" rx="4" fill="#0f0f07" stroke="#6b6b1b" stroke-width="1"/>
+    <text x="430" y="568" class="component-title" text-anchor="middle">INFERENCE ENGINE</text>
+    <text x="430" y="591" class="description-text" text-anchor="middle">Intent Detection and Analysis</text>
+    <text x="430" y="609" class="description-text" text-anchor="middle">Tool Selection Mechanism</text>
+    <text x="430" y="627" class="description-text" text-anchor="middle">Command Routing Logic</text>
+    <text x="430" y="645" class="description-text" text-anchor="middle">Ollama LLM Integration</text>
+    <text x="430" y="663" class="description-text" text-anchor="middle">Response Generation</text>
+
+    <!-- Memory Manager -->
+    <rect x="760" y="540" width="600" height="140" rx="4" fill="#0f0f07" stroke="#6b6b1b" stroke-width="1"/>
+    <text x="1060" y="568" class="component-title" text-anchor="middle">MEMORY MANAGER</text>
+    <text x="1060" y="591" class="description-text" text-anchor="middle">Context Tracking Module</text>
+    <text x="1060" y="609" class="description-text" text-anchor="middle">Conversation History Log</text>
+    <text x="1060" y="627" class="description-text" text-anchor="middle">Command Execution Records</text>
+    <text x="1060" y="645" class="description-text" text-anchor="middle">Activity State Database</text>
+    <text x="1060" y="663" class="description-text" text-anchor="middle">Persistence Storage</text>
+
+    <!-- Processing Pipeline -->
+    <rect x="1390" y="540" width="600" height="140" rx="4" fill="#0f0f07" stroke="#6b6b1b" stroke-width="1"/>
+    <text x="1690" y="568" class="component-title" text-anchor="middle">PROCESSING PIPELINE</text>
+    <text x="1690" y="591" class="description-text" text-anchor="middle">Input Normalization</text>
+    <text x="1690" y="609" class="description-text" text-anchor="middle">Context Injection</text>
+    <text x="1690" y="627" class="description-text" text-anchor="middle">Tool Execution Coordination</text>
+    <text x="1690" y="645" class="description-text" text-anchor="middle">Response Construction</text>
+    <text x="1690" y="663" class="description-text" text-anchor="middle">Error Handling and Recovery</text>
+
+    <!-- Command Dispatcher -->
+    <rect x="2020" y="540" width="620" height="140" rx="4" fill="#0f0f07" stroke="#6b6b1b" stroke-width="1"/>
+    <text x="2330" y="568" class="component-title" text-anchor="middle">DISPATCHER AND ROUTER</text>
+    <text x="2330" y="591" class="description-text" text-anchor="middle">System Command Routing</text>
+    <text x="2330" y="609" class="description-text" text-anchor="middle">Feature Module Invocation</text>
+    <text x="2330" y="627" class="description-text" text-anchor="middle">Agent Activation Control</text>
+    <text x="2330" y="645" class="description-text" text-anchor="middle">Response Distribution</text>
+    <text x="2330" y="663" class="description-text" text-anchor="middle">Output Interface Routing</text>
+
+    <!-- Inter-component flows -->
+    <path d="M 730 610 L 760 610" class="connector-thick" marker-end="url(#arrow-gold)"/>
+    <path d="M 1360 610 L 1390 610" class="connector-thick" marker-end="url(#arrow-gold)"/>
+    <path d="M 1990 610 L 2020 610" class="connector-thick" marker-end="url(#arrow-gold)"/>
+
+    <!-- Data flows IN to Controller -->
+    <path d="M 400 380 Q 400 420 430 540" class="connector-line" marker-end="url(#arrow-blue)"/>
+    <path d="M 1030 380 Q 1030 420 1060 540" class="connector-line" marker-end="url(#arrow-blue)"/>
+    <path d="M 1660 380 Q 1660 420 1690 540" class="connector-line" marker-end="url(#arrow-blue)"/>
+
+    <!-- LAYER 3: AGENT LAYER -->
+    <text x="100" y="820" class="section-title">LAYER 3: AGENT EXECUTION CONTROLLERS</text>
+    <line x1="100" y1="840" x2="2700" y2="840" class="divider-line"/>
+
+    <!-- System Agent -->
+    <rect x="100" y="860" width="1300" height="300" rx="6" class="box-agent"/>
+    <rect x="120" y="882" width="1260" height="28" fill="#0d1a0d" stroke="none" rx="3"/>
+    <text x="750" y="904" class="component-title" text-anchor="middle">SYSTEM AGENT - OS EXECUTION CONTROLLER</text>
+
+    <rect x="130" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="280" y="960" class="component-title" text-anchor="middle">OS Control Module</text>
+    <text x="280" y="982" class="description-text" text-anchor="middle">Shutdown / Restart / Sleep</text>
+    <text x="280" y="1001" class="description-text" text-anchor="middle">Windows PowerShell</text>
+
+    <rect x="450" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="600" y="960" class="component-title" text-anchor="middle">Media Control Module</text>
+    <text x="600" y="982" class="description-text" text-anchor="middle">Volume Control</text>
+    <text x="600" y="1001" class="description-text" text-anchor="middle">Playback Management</text>
+
+    <rect x="770" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="920" y="960" class="component-title" text-anchor="middle">Input Control Module</text>
+    <text x="920" y="982" class="description-text" text-anchor="middle">Keyboard/Mouse</text>
+    <text x="920" y="1001" class="description-text" text-anchor="middle">Automation Tasks</text>
+
+    <rect x="1090" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="1240" y="960" class="component-title" text-anchor="middle">Hardware I/O Module</text>
+    <text x="1240" y="982" class="description-text" text-anchor="middle">Camera / Screenshots</text>
+    <text x="1240" y="1001" class="description-text" text-anchor="middle">File Operations</text>
+
+    <rect x="130" y="1040" width="1260" height="100" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="760" y="1068" class="component-text" text-anchor="middle">SYSTEM LIBRARIES: pyautogui / pycaw / psutil / subprocess / PIL / cv2</text>
+    <text x="760" y="1090" class="description-text" text-anchor="middle">Direct Windows API access through Python bindings and low-level process/hardware control</text>
+    <text x="760" y="1107" class="description-text" text-anchor="middle">Enables system-wide automation and hardware interaction capabilities</text>
+
+    <!-- Features Agent -->
+    <rect x="1430" y="860" width="1300" height="300" rx="6" class="box-agent"/>
+    <rect x="1450" y="882" width="1260" height="28" fill="#0d1a0d" stroke="none" rx="3"/>
+    <text x="2080" y="904" class="component-title" text-anchor="middle">FEATURES AGENT - DATA INTELLIGENCE CONTROLLER</text>
+
+    <rect x="1460" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="1610" y="960" class="component-title" text-anchor="middle">Activity Monitor</text>
+    <text x="1610" y="982" class="description-text" text-anchor="middle">Active Window Tracking</text>
+    <text x="1610" y="1001" class="description-text" text-anchor="middle">Time Accounting</text>
+
+    <rect x="1780" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="1930" y="960" class="component-title" text-anchor="middle">Clipboard Manager</text>
+    <text x="1930" y="982" class="description-text" text-anchor="middle">History Tracking</text>
+    <text x="1930" y="1001" class="description-text" text-anchor="middle">Content Logging</text>
+
+    <rect x="2100" y="930" width="300" height="90" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="2250" y="960" class="component-title" text-anchor="middle">File Finder Module</text>
+    <text x="2250" y="982" class="description-text" text-anchor="middle">Smart Search Engine</text>
+    <text x="2250" y="1001" class="description-text" text-anchor="middle">Fuzzy Matching</text>
+
+    <rect x="1460" y="1040" width="1260" height="100" rx="4" fill="#081408" stroke="#2d5a2d" stroke-width="1"/>
+    <text x="2090" y="1068" class="component-text" text-anchor="middle">FEATURE LIBRARIES: os.walk / pathlib / clipboard-api / watchdog</text>
+    <text x="2090" y="1090" class="description-text" text-anchor="middle">File indexing with caching and intelligent searching capabilities</text>
+    <text x="2090" y="1107" class="description-text" text-anchor="middle">Event-driven monitoring for file system changes and activity logging</text>
+
+    <!-- Flows from Controller to Agents -->
+    <path d="M 730 680 Q 750 760 750 860" class="connector-line" marker-end="url(#arrow-blue)"/>
+    <path d="M 2070 680 Q 2090 760 2090 860" class="connector-line" marker-end="url(#arrow-blue)"/>
+
+    <!-- LAYER 4: BACKGROUND MONITORS -->
+    <text x="100" y="1220" class="section-title">LAYER 4: CONCURRENT BACKGROUND MONITORS</text>
+    <line x1="100" y1="1240" x2="2700" y2="1240" class="divider-line"/>
+
+    <rect x="100" y="1260" width="2600" height="200" rx="6" class="box-features"/>
+    <rect x="120" y="1282" width="2560" height="28" fill="#1a0d1a" stroke="none" rx="3"/>
+    <text x="1400" y="1304" class="component-title" text-anchor="middle">BACKGROUND PROCESS THREADS - CONCURRENT SYSTEM MONITORS</text>
+
+    <rect x="130" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="282" y="1358" class="description-text" text-anchor="middle">Wake Word Listener</text>
+    <text x="282" y="1376" class="description-text" text-anchor="middle">Passive Detection Mode</text>
+    <text x="282" y="1394" class="description-text" text-anchor="middle">Continuous Operation</text>
+    <text x="282" y="1412" class="description-text" text-anchor="middle">Thread Daemon 1</text>
+
+    <rect x="455" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="607" y="1358" class="description-text" text-anchor="middle">Telegram Polling Loop</text>
+    <text x="607" y="1376" class="description-text" text-anchor="middle">Message Queue Handler</text>
+    <text x="607" y="1394" class="description-text" text-anchor="middle">Asynchronous I/O</text>
+    <text x="607" y="1412" class="description-text" text-anchor="middle">Thread Daemon 2</text>
+
+    <rect x="780" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="932" y="1358" class="description-text" text-anchor="middle">Clipboard Monitor</text>
+    <text x="932" y="1376" class="description-text" text-anchor="middle">History Logging</text>
+    <text x="932" y="1394" class="description-text" text-anchor="middle">Event-Driven</text>
+    <text x="932" y="1412" class="description-text" text-anchor="middle">Thread Daemon 3</text>
+
+    <rect x="1105" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="1257" y="1358" class="description-text" text-anchor="middle">Activity Monitor</text>
+    <text x="1257" y="1376" class="description-text" text-anchor="middle">Window Tracking</text>
+    <text x="1257" y="1394" class="description-text" text-anchor="middle">Timer-Based</text>
+    <text x="1257" y="1412" class="description-text" text-anchor="middle">Thread Daemon 4</text>
+
+    <rect x="1430" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="1582" y="1358" class="description-text" text-anchor="middle">File Tracker</text>
+    <text x="1582" y="1376" class="description-text" text-anchor="middle">FSEvents Monitor</text>
+    <text x="1582" y="1394" class="description-text" text-anchor="middle">Async Operation</text>
+    <text x="1582" y="1412" class="description-text" text-anchor="middle">Thread Daemon 5</text>
+
+    <rect x="1755" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="1907" y="1358" class="description-text" text-anchor="middle">Browser Extension</text>
+    <text x="1907" y="1376" class="description-text" text-anchor="middle">Tab Monitoring</text>
+    <text x="1907" y="1394" class="description-text" text-anchor="middle">HTTP Listener</text>
+    <text x="1907" y="1412" class="description-text" text-anchor="middle">Thread Daemon 6</text>
+
+    <rect x="2080" y="1330" width="305" height="100" rx="4" fill="#0f070f" stroke="#5a2d5a" stroke-width="1"/>
+    <text x="2232" y="1358" class="description-text" text-anchor="middle">Memory Logger</text>
+    <text x="2232" y="1376" class="description-text" text-anchor="middle">Context Persistence</text>
+    <text x="2232" y="1394" class="description-text" text-anchor="middle">State Management</text>
+    <text x="2232" y="1412" class="description-text" text-anchor="middle">Thread Daemon 7</text>
+
+    <!-- LAYER 5: OS/HARDWARE -->
+    <text x="100" y="1540" class="section-title">LAYER 5: OS AND HARDWARE INTERACTION LAYER</text>
+    <line x1="100" y1="1560" x2="2700" y2="1560" class="divider-line"/>
+
+    <rect x="100" y="1580" width="2600" height="200" rx="6" class="box-os"/>
+    <rect x="120" y="1602" width="2560" height="28" fill="#0d0d1a" stroke="none" rx="3"/>
+    <text x="1400" y="1624" class="component-title" text-anchor="middle">OPERATING SYSTEM AND HARDWARE ABSTRACTION LAYER</text>
+
+    <rect x="130" y="1650" width="360" height="110" rx="4" fill="#070712" stroke="#2d2d5a" stroke-width="1"/>
+    <text x="310" y="1678" class="description-text" text-anchor="middle">Windows System APIs</text>
+    <text x="310" y="1696" class="description-text" text-anchor="middle">pyautogui Interface</text>
+    <text x="310" y="1714" class="description-text" text-anchor="middle">pycaw Audio Control</text>
+    <text x="310" y="1732" class="description-text" text-anchor="middle">subprocess Management</text>
+
+    <rect x="510" y="1650" width="360" height="110" rx="4" fill="#070712" stroke="#2d2d5a" stroke-width="1"/>
+    <text x="690" y="1678" class="description-text" text-anchor="middle">System Resources</text>
+    <text x="690" y="1696" class="description-text" text-anchor="middle">psutil Monitoring</text>
+    <text x="690" y="1714" class="description-text" text-anchor="middle">Process Management</text>
+    <text x="690" y="1732" class="description-text" text-anchor="middle">Performance Metrics</text>
+
+    <rect x="890" y="1650" width="360" height="110" rx="4" fill="#070712" stroke="#2d2d5a" stroke-width="1"/>
+    <text x="1070" y="1678" class="description-text" text-anchor="middle">File System Interface</text>
+    <text x="1070" y="1696" class="description-text" text-anchor="middle">os / pathlib Modules</text>
+    <text x="1070" y="1714" class="description-text" text-anchor="middle">FSEvents Monitoring</text>
+    <text x="1070" y="1732" class="description-text" text-anchor="middle">File Indexing Engine</text>
+
+    <rect x="1270" y="1650" width="360" height="110" rx="4" fill="#070712" stroke="#2d2d5a" stroke-width="1"/>
+    <text x="1450" y="1678" class="description-text" text-anchor="middle">Hardware I/O Interface</text>
+    <text x="1450" y="1696" class="description-text" text-anchor="middle">cv2 Camera Access</text>
+    <text x="1450" y="1714" class="description-text" text-anchor="middle">PIL Image Capture</text>
+    <text x="1450" y="1732" class="description-text" text-anchor="middle">Audio Hardware</text>
+
+    <rect x="1650" y="1650" width="360" height="110" rx="4" fill="#070712" stroke="#2d2d5a" stroke-width="1"/>
+    <text x="1830" y="1678" class="description-text" text-anchor="middle">Storage Layer</text>
+    <text x="1830" y="1696" class="description-text" text-anchor="middle">JSON Configuration</text>
+    <text x="1830" y="1714" class="description-text" text-anchor="middle">SQLite Database</text>
+    <text x="1830" y="1732" class="description-text" text-anchor="middle">Cache Management</text>
+
+    <rect x="2030" y="1650" width="360" height="110" rx="4" fill="#070712" stroke="#2d2d5a" stroke-width="1"/>
+    <text x="2210" y="1678" class="description-text" text-anchor="middle">Network Stack</text>
+    <text x="2210" y="1696" class="description-text" text-anchor="middle">HTTP/HTTPS Protocol</text>
+    <text x="2210" y="1714" class="description-text" text-anchor="middle">Telegram API Interface</text>
+    <text x="2210" y="1732" class="description-text" text-anchor="middle">Local WebSocket</text>
+
+    <!-- DATA FLOW EXAMPLES -->
+    <text x="100" y="1860" class="section-title">DATA FLOW EXAMPLES</text>
+    <line x1="100" y1="1880" x2="2700" y2="1880" class="divider-line"/>
+
+    <!-- Example 1 -->
+    <text x="100" y="1920" class="subsection-title">FLOW 1: Voice-Activated System Command (Shutdown Request)</text>
+    
+    <rect x="120" y="1945" width="2640" height="110" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/>
+    <text x="140" y="1970" class="component-text">wake_word.py detects activation phrase -> voice.py captures speech input -> brain.py processes intent (system_command)</text>
+    <text x="140" y="1992" class="component-text">dispatcher routes to system agent -> OS control module executes shutdown via PowerShell -> OS kernel processes termination</text>
+    <text x="140" y="2014" class="component-text">CRITICAL PATH: Interface Input -> Controller Processing -> Agent Execution -> OS Output -> Hardware Action</text>
+    <text x="140" y="2039" class="description-text">Latency Profile: Voice Capture (100ms) -> Intent Detection (50ms) -> Tool Selection (20ms) -> System Execution (500ms)</text>
+
+    <!-- Example 2 -->
+    <text x="100" y="2090" class="subsection-title">FLOW 2: Telegram Remote File Search Request</text>
+    
+    <rect x="120" y="2115" width="2640" height="110" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/>
+    <text x="140" y="2140" class="component-text">Telegram user sends search command -> telegram.py parses request -> brain.py determines intent (file_search)</text>
+    <text x="140" y="2162" class="component-text">dispatcher calls file finder feature -> file finder searches local index with fuzzy matching -> results formatted -> sent via Telegram API</text>
+    <text x="140" y="2184" class="component-text">CRITICAL PATH: Remote Input -> Message Parse -> Brain Route -> Feature Execution -> Response Format -> Remote Output</text>
+    <text x="140" y="2209" class="description-text">Latency Profile: API Polling (1s) -> Command Parse (20ms) -> Brain Processing (100ms) -> Search Execution (200ms) -> API Response (100ms)</text>
+
+    <!-- Example 3 -->
+    <text x="100" y="2260" class="subsection-title">FLOW 3: Browser Tab Monitoring with Context Awareness</text>
+    
+    <rect x="120" y="2285" width="2640" height="110" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/>
+    <text x="140" y="2310" class="component-text">Browser extension captures tab change -> HTTP listener receives event in background thread -> activity monitor logs window/URL pair</text>
+    <text x="140" y="2332" class="component-text">memory logger saves context with timestamp -> user asks about browser history -> brain retrieves from memory module -> data returned</text>
+    <text x="140" y="2354" class="component-text">CRITICAL PATH: Extension Event -> Background Monitor -> Memory Store -> Query Processing -> Data Retrieval -> Context Response</text>
+    <text x="140" y="2379" class="description-text">Latency Profile: Extension Event (10ms) -> Background Handler (5ms) -> Memory Storage (20ms) -> Query Processing (30ms) -> Response (10ms)</text>
+
+  </g>
+
+  <!-- Footer Section with proper spacing -->
+  <rect x="0" y="2580" width="2800" height="220" class="bg-section" opacity="0.95"/>
+  <line x1="0" y1="2580" x2="2800" y2="2580" class="divider-line"/>
+  
+  <text x="100" y="2625" class="section-title">SYSTEM ARCHITECTURE SUMMARY</text>
+  
+  <text x="100" y="2665" class="footer-text">Zyron Assistant implements a rigorous layered architecture with strict separation of concerns. The Interface Layer receives input from</text>
+  <text x="100" y="2685" class="footer-text">multiple sources (voice, Telegram, browser extensions). These inputs converge on the Brain Controller Layer, which uses sophisticated</text>
+  <text x="100" y="2705" class="footer-text">inference engine capabilities including intent detection, tool selection, and response generation. The Memory Manager maintains conversational</text>
+  <text x="100" y="2725" class="footer-text">context and historical data for stateful interactions.</text>
+  
+  <text x="100" y="2755" class="footer-text">The Agent Execution Layer contains specialized controllers for system operations and feature implementations. System Agent handles OS-level</text>
+  <text x="100" y="2775" class="footer-text">control (shutdown, restart, media control, input simulation, hardware access). Features Agent manages data intelligence (activity monitoring,</text>
+  <text x="100" y="2795" class="footer-text">clipboard history, file searching, file tracking).</text>
+  
+  <text x="100" y="2825" class="footer-text">Concurrent Background Monitors run continuously in separate threads, enabling passive monitoring without blocking main execution. These include</text>
+  <text x="100" y="2845" class="footer-text">wake word detection, Telegram polling, clipboard monitoring, activity tracking, file system events, browser tab monitoring, context persistence,</text>
+  <text x="100" y="2865" class="footer-text">and optional camera capture. The OS/Hardware Abstraction Layer provides standardized access to system resources through well-established Python</text>
+  <text x="100" y="2885" class="footer-text">libraries. All computation occurs locally using Ollama for language model inference, ensuring privacy and offline operation. Telegram acts purely</text>
+  <text x="100" y="2905" class="footer-text">as a remote command interface adapter without accessing sensitive data.</text>
+
+</svg>
