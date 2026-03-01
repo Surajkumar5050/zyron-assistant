@@ -21,8 +21,26 @@ title ZYRON ASSISTANT - PREMIUM SETUP
 
 cls
 
-:: ================= PYTHON CHECK =================
+:: ================= BANNER =================
 echo.
+echo   !C_BCYN!===========================================================!C_RST!
+echo   !C_BCYN!                                                           !C_RST!
+echo   !C_BMAG!      ______  _     _  ____    ___   _   _               !C_RST!
+echo   !C_BMAG!     ^|_  /\ \^| ^|   ^| ^|  _ \  / _ \ ^| \ ^| ^|              !C_RST!
+echo   !C_BMAG!       / /  \ V /  ^| ^|_) ^|^| ^| ^| ^|^|  \^| ^|              !C_RST!
+echo   !C_BMAG!      /___   \_/   ^|____/  \___/ ^|_^|\__^|              !C_RST!
+echo   !C_BCYN!                                                           !C_RST!
+echo   !C_CYN!           ZYRON ASSISTANT  --  Setup Wizard               !C_RST!
+echo   !C_BCYN!                                                           !C_RST!
+echo   !C_BCYN!===========================================================!C_RST!
+echo.
+echo   !C_YLW!  Welcome! Setting up your ZYRON environment...!C_RST!
+echo   !C_YLW!  Please wait while we configure everything for you.!C_RST!
+echo.
+echo   !C_BCYN!-----------------------------------------------------------!C_RST!
+echo.
+
+:: ================= PYTHON CHECK =================
 echo   !C_CYN![1/6]!C_RST! Scanning for Python...
 
 set "PYTHON_CMD="
@@ -132,7 +150,13 @@ echo     !C_GRN![OK]!C_RST! Shortcut created.
 
 :Finish
 echo.
-echo   !C_GRN!Setup complete.!C_RST!
+echo   !C_BCYN!===========================================================!C_RST!
+echo   !C_BCYN!                                                           !C_RST!
+echo   !C_GRN!           ZYRON ASSISTANT is ready to use!                !C_RST!
+echo   !C_BCYN!                                                           !C_RST!
+echo   !C_CYN!    All steps completed. Enjoy ZYRON Assistant!            !C_RST!
+echo   !C_BCYN!                                                           !C_RST!
+echo   !C_BCYN!===========================================================!C_RST!
 echo.
 pause
 exit /b
