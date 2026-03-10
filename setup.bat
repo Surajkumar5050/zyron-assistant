@@ -26,41 +26,62 @@ echo.
 echo   !C_CYN![1/6]!C_RST! Scanning for Python...
 
 set "PYTHON_CMD="
+set "PYTHON_VER="
 
 for %%V in (3.11 3.10 3.12) do (
-    py -%%V --version >nul 2>&1
-    if not errorlevel 1 (
-        set "PYTHON_CMD=py -%%V"
-        echo     !C_GRN![OK]!C_RST! Python %%V found (Launcher)
-        goto :FoundPython
+    if not defined PYTHON_CMD (
+        py -%%V --version >nul 2>&1
+        if not errorlevel 1 (
+            set "PYTHON_CMD=py"
+            set "PYTHON_VER=-%%V"
+            echo     !C_GRN![OK]!C_RST! Python %%V found (Launcher)
+        )
     )
 )
 
-python --version >nul 2>&1
-if not errorlevel 1 (
-    set "PYTHON_CMD=python"
-    echo     !C_GRN![OK]!C_RST! Python found (Default PATH)
-    goto :FoundPython
+if not defined PYTHON_CMD (
+    python --version >nul 2>&1
+    if not errorlevel 1 (
+        set "PYTHON_CMD=python"
+        set "PYTHON_VER="
+        echo     !C_GRN![OK]!C_RST! Python found (Default PATH)
+    )
 )
 
-echo.
-echo     !C_RED![ERROR]!C_RST! Python 3.10+ not found.
-pause
-exit /b 1
+if not defined PYTHON_CMD (
+    echo.
+    echo     !C_RED![ERROR]!C_RST! Python 3.10+ not found.
+    pause
+    exit /b 1
+)
 
-:FoundPython
 echo.
 
 :: ================= ENVIRONMENT =================
 echo   !C_CYN![2/6]!C_RST! Creating virtual environment...
 
 if exist venv (
-    rmdir /s /q venv >nul 2>&1
+    :: Kill any python processes that may be locking venv files
+    taskkill /f /im python.exe >nul 2>&1
+    taskkill /f /im pythonw.exe >nul 2>&1
+    :: Retry deletion up to 3 times with a pause
+    for /l %%i in (1,1,3) do (
+        if exist venv (
+            rmdir /s /q venv >nul 2>&1
+            timeout /t 1 /nobreak >nul
+        )
+    )
 )
 
-%PYTHON_CMD% -m venv venv
+%PYTHON_CMD% %PYTHON_VER% -m venv venv
 if errorlevel 1 (
-    echo     !C_RED![ERROR]!C_RST! Failed to create venv.
+    :: One more attempt after a longer wait (antivirus may have briefly locked)
+    echo     !C_YLW![WARN]!C_RST! Retrying venv creation...
+    timeout /t 3 /nobreak >nul
+    %PYTHON_CMD% %PYTHON_VER% -m venv venv
+)
+if errorlevel 1 (
+    echo     !C_RED![ERROR]!C_RST! Failed to create venv. Try running setup.bat as Administrator.
     pause
     exit /b 1
 )
@@ -72,8 +93,8 @@ echo.
 echo   !C_CYN![3/6]!C_RST! Installing dependencies...
 
 call venv\Scripts\activate.bat
-python -m pip install --upgrade pip >nul
-pip install -e .
+venv\Scripts\python.exe -m pip install --upgrade pip >nul
+venv\Scripts\python.exe -m pip install -e .
 
 if errorlevel 1 (
     echo     !C_RED![ERROR]!C_RST! Dependency installation failed.

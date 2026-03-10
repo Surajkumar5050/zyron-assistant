@@ -60,4 +60,4 @@ Repository = "https://github.com/Surajkumar5050/zyron-assistant.git"
 Issues = "https://github.com/Surajkumar5050/zyron-assistant/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/zyron","src/zyron_linx"]
+packages = ["src/zyron", "src/zyron_linux"]
