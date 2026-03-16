@@ -10,42 +10,78 @@ from scipy.io.wavfile import write
 import numpy as np
 import requests
 import json
+import platform
 import zyron_linux.features.activity as activity_monitor
 import zyron_linux.features.clipboard as clipboard_monitor
 # import zyron_linux.features.files.finder as file_finder  # Uses the new smart finder we just created
 
-PROCESS_NAMES = {
-    # Browsers
-    "chrome": "chrome.exe", "googlechrome": "chrome.exe", "google": "chrome.exe",
-    "brave": "brave.exe", "bravebrowser": "brave.exe", 
-    "edge": "msedge.exe", "msedge": "msedge.exe", "microsoftedge": "msedge.exe",
-    "firefox": "firefox.exe", "mozilla": "firefox.exe",
-    "opera": "opera.exe",
+# Platform-specific process names
+if platform.system() == "Windows":
+    PROCESS_NAMES = {
+        # Browsers
+        "chrome": "chrome.exe", "googlechrome": "chrome.exe", "google": "chrome.exe",
+        "brave": "brave.exe", "bravebrowser": "brave.exe", 
+        "edge": "msedge.exe", "msedge": "msedge.exe", "microsoftedge": "msedge.exe",
+        "firefox": "firefox.exe", "mozilla": "firefox.exe",
+        "opera": "opera.exe",
 
-    # System & Tools
-    "notepad": "notepad.exe",
-    "calculator": "calc.exe", "calc": "calc.exe",
-    "cmd": "cmd.exe", "terminal": "WindowsTerminal.exe",
-    "explorer": "explorer.exe", "fileexplorer": "explorer.exe",
-    "taskmanager": "Taskmgr.exe",
+        # System & Tools
+        "notepad": "notepad.exe",
+        "calculator": "calc.exe", "calc": "calc.exe",
+        "cmd": "cmd.exe", "terminal": "WindowsTerminal.exe",
+        "explorer": "explorer.exe", "fileexplorer": "explorer.exe",
+        "taskmanager": "Taskmgr.exe",
 
-    # Media
-    "spotify": "spotify.exe",
-    "vlc": "vlc.exe", 
+        # Media
+        "spotify": "spotify.exe",
+        "vlc": "vlc.exe", 
 
-    # Coding
-    "vscode": "Code.exe", "code": "Code.exe", "visualstudiocode": "Code.exe",
-    "pycharm": "pycharm64.exe",
-    "androidstudio": "studio64.exe",
-    "intellij": "idea64.exe",
-    "python": "python.exe",
+        # Coding
+        "vscode": "Code.exe", "code": "Code.exe", "visualstudiocode": "Code.exe",
+        "pycharm": "pycharm64.exe",
+        "androidstudio": "studio64.exe",
+        "intellij": "idea64.exe",
+        "python": "python.exe",
 
-    # Social
-    "telegram": "Telegram.exe",
-    "discord": "Discord.exe",
-    "whatsapp": "WhatsApp.exe",
-    "zoom": "Zoom.exe"
-}
+        # Social
+        "telegram": "Telegram.exe",
+        "discord": "Discord.exe",
+        "whatsapp": "WhatsApp.exe",
+        "zoom": "Zoom.exe"
+    }
+else:  # Linux
+    PROCESS_NAMES = {
+        # Browsers
+        "chrome": "chrome", "googlechrome": "chrome", "google": "chrome",
+        "brave": "brave", "bravebrowser": "brave", 
+        "edge": "msedge", "msedge": "msedge", "microsoftedge": "msedge",
+        "firefox": "firefox", "mozilla": "firefox",
+        "opera": "opera",
+
+        # System & Tools
+        "notepad": "gedit",  # Linux text editor
+        "calculator": "gnome-calculator", "calc": "gnome-calculator",
+        "cmd": "gnome-terminal", "terminal": "gnome-terminal",
+        "explorer": "nautilus", "fileexplorer": "nautilus",
+        "taskmanager": "gnome-system-monitor",
+
+        # Media
+        "spotify": "spotify",
+        "vlc": "vlc", 
+
+        # Coding
+        "vscode": "code", "code": "code", "visualstudiocode": "code",
+        "pycharm": "pycharm",
+        "androidstudio": "studio",
+        "intellij": "idea",
+        "python": "python",
+
+        # Social
+        "telegram": "telegram-desktop",
+        "discord": "discord",
+        "whatsapp": "whatsapp",
+        "zoom": "zoom"
+    }
 
 def get_laptop_location():
     """
@@ -162,47 +198,80 @@ def get_browser_path(browser_name):
     """Finds browser executable dynamically without hardcoded paths."""
     browser_name = browser_name.lower().strip()
     
-    exes = {
-        "chrome": "chrome.exe",
-        "google": "chrome.exe",
-        "brave": "brave.exe", 
-        "firefox": "firefox.exe",
-        "mozilla": "firefox.exe",
-        "edge": "msedge.exe",
-        "msedge": "msedge.exe",
-        "opera": "launcher.exe" 
-    }
+    if platform.system() == "Windows":
+        exes = {
+            "chrome": "chrome.exe",
+            "google": "chrome.exe",
+            "brave": "brave.exe", 
+            "firefox": "firefox.exe",
+            "mozilla": "firefox.exe",
+            "edge": "msedge.exe",
+            "msedge": "msedge.exe",
+            "opera": "launcher.exe" 
+        }
+        
+        executable = exes.get(browser_name, f"{browser_name}.exe")
+        if not executable.endswith(".exe"): executable += ".exe"
+        
+        # Try system PATH first
+        path = shutil.which(executable)
+        if path: return path
+        
+        # Search common Windows locations
+        possible_roots = [
+            os.environ.get("PROGRAMFILES"), 
+            os.environ.get("PROGRAMFILES(X86)"),
+            os.environ.get("LOCALAPPDATA") 
+        ]
+        
+        common_subdirs = [
+            "Google\\Chrome\\Application",
+            "BraveSoftware\\Brave-Browser\\Application",
+            "Microsoft\\Edge\\Application",
+            "Mozilla Firefox",
+            "Opera"
+        ]
+        
+        for root in possible_roots:
+            if not root: continue
+            for subdir in common_subdirs:
+                full_path = os.path.join(root, subdir, executable)
+                if os.path.exists(full_path):
+                    return full_path
+                    
+        return None
     
-    executable = exes.get(browser_name, f"{browser_name}.exe")
-    if not executable.endswith(".exe"): executable += ".exe"
-    
-    
-    path = shutil.which(executable)
-    if path: return path
-    
-    
-    possible_roots = [
-        os.environ.get("PROGRAMFILES"), 
-        os.environ.get("PROGRAMFILES(X86)"),
-        os.environ.get("LOCALAPPDATA") 
-    ]
-    
-    common_subdirs = [
-        "Google\\Chrome\\Application",
-        "BraveSoftware\\Brave-Browser\\Application",
-        "Microsoft\\Edge\\Application",
-        "Mozilla Firefox",
-        "Opera"
-    ]
-    
-    for root in possible_roots:
-        if not root: continue
-        for subdir in common_subdirs:
-            full_path = os.path.join(root, subdir, executable)
-            if os.path.exists(full_path):
-                return full_path
-                
-    return None
+    else:  # Linux
+        exes = {
+            "chrome": "google-chrome",
+            "google": "google-chrome",
+            "brave": "brave-browser",
+            "firefox": "firefox",
+            "mozilla": "firefox",
+            "edge": "microsoft-edge",
+            "msedge": "microsoft-edge",
+            "opera": "opera"
+        }
+        
+        executable = exes.get(browser_name, browser_name)
+        
+        # Try system PATH
+        path = shutil.which(executable)
+        if path: return path
+        
+        # Search common Linux locations
+        common_paths = [
+            f"/usr/bin/{executable}",
+            f"/usr/local/bin/{executable}",
+            f"/snap/bin/{executable}",
+            os.path.expanduser(f"~/.local/bin/{executable}")
+        ]
+        
+        for path in common_paths:
+            if os.path.exists(path):
+                return path
+        
+        return None
 
 
 def capture_webcam():
@@ -317,27 +386,44 @@ def get_system_health():
 
 def clear_recycle_bin():
     """
-    Clears the Windows Recycle Bin permanently.
-    Uses PowerShell command to empty all recycle bins on all drives.
+    Clears the Recycle Bin/Trash permanently (cross-platform).
+    Windows: Uses PowerShell to empty recycle bin
+    Linux: Uses gio trash command or removes trash files
     """
-    print("🗑️ Clearing Recycle Bin...")
+    print("🗑️ Clearing Recycle Bin/Trash...")
     
     try:
-        # PowerShell command to clear recycle bin for all drives
-        ps_command = 'Clear-RecycleBin -Force -ErrorAction SilentlyContinue'
+        if platform.system() == "Windows":
+            # PowerShell command to clear recycle bin for all drives
+            ps_command = 'Clear-RecycleBin -Force -ErrorAction SilentlyContinue'
+            result = os.system(f'powershell -Command "{ps_command}"')
+            
+            if result == 0:
+                print("✅ Recycle Bin cleared successfully!")
+                return "Recycle Bin has been emptied successfully. All deleted files have been permanently removed."
+            else:
+                print("⚠️ Recycle Bin might be already empty or operation completed with warnings.")
+                return "Recycle Bin operation completed. It may have been already empty."
         
-        # Execute PowerShell command
-        result = os.system(f'powershell -Command "{ps_command}"')
-        
-        if result == 0:
-            print("✅ Recycle Bin cleared successfully!")
-            return "Recycle Bin has been emptied successfully. All deleted files have been permanently removed."
-        else:
-            print("⚠️ Recycle Bin might be already empty or operation completed with warnings.")
-            return "Recycle Bin operation completed. It may have been already empty."
+        else:  # Linux
+            # Try gio trash command first (modern Linux)
+            result = os.system('gio trash --empty 2>/dev/null')
+            
+            if result == 0:
+                print("✅ Trash cleared successfully!")
+                return "Trash has been emptied successfully. All deleted files have been permanently removed."
+            else:
+                # Fallback: manually remove trash files
+                trash_path = os.path.expanduser("~/.local/share/Trash/files")
+                if os.path.exists(trash_path):
+                    os.system(f'rm -rf {trash_path}/* 2>/dev/null')
+                    print("✅ Trash cleared successfully!")
+                    return "Trash has been emptied successfully."
+                else:
+                    return "Trash is already empty or not found."
             
     except Exception as e:
-        error_msg = f"Error clearing recycle bin: {e}"
+        error_msg = f"Error clearing trash: {e}"
         print(f"❌ {error_msg}")
         return error_msg
 
@@ -475,12 +561,18 @@ def close_application(app_name):
     if app_key in PROCESS_NAMES:
         exe_name = PROCESS_NAMES[app_key]
     else:
-        exe_name = f"{app_key}.exe"
+        if platform.system() == "Windows":
+            exe_name = f"{app_key}.exe"
+        else:
+            exe_name = app_key
         
     print(f"💀 Killing process target: {exe_name}")
     
     try:
-        os.system(f"taskkill /f /im {exe_name} /t")
+        if platform.system() == "Windows":
+            os.system(f"taskkill /f /im {exe_name} /t")
+        else:  # Linux
+            os.system(f"pkill -9 {exe_name}")
     except Exception as e:
         print(f"Error closing app: {e}")
 
@@ -491,10 +583,16 @@ def open_file_path(path):
         elif "desktop" in path.lower():
             path = os.path.join(os.path.expanduser("~"), "Desktop")
         elif "c drive" in path.lower() or "c:" in path.lower():
-            path = "C:/"
+            if platform.system() == "Windows":
+                path = "C:/"
+            else:
+                path = "/"  # Root directory on Linux
             
         if os.path.exists(path):
-            os.startfile(path)
+            if platform.system() == "Windows":
+                os.startfile(path)
+            else:  # Linux
+                os.system(f'xdg-open "{path}" &')
         else:
             print(f"❌ Path not found: {path}")
     except Exception as e:

@@ -1,8 +1,9 @@
 import json
 import os
+import tempfile
 from pathlib import Path
 
-COMMAND_FILE_PATH = Path(os.environ.get('TEMP', '')) / 'zyron_firefox_commands.json'
+COMMAND_FILE_PATH = Path(tempfile.gettempdir()) / 'zyron_firefox_commands.json'
 
 def send_browser_command(action, **kwargs):
     """

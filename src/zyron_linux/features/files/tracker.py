@@ -10,10 +10,21 @@ import threading
 import sqlite3
 import shutil
 import urllib.parse
+import platform
+import tempfile
 from datetime import datetime, timedelta
 from collections import defaultdict
-import win32gui
-import win32process
+
+# Windows-specific imports (Conditional)
+HAS_WIN32 = False
+if platform.system() == "Windows":
+    try:
+        import win32gui
+        import win32process
+        HAS_WIN32 = True
+    except ImportError:
+        pass
+
 import psutil
 
 # Configuration
@@ -28,26 +39,50 @@ tracker_thread = None
 currently_open_files = {}  # Track files currently being accessed
 
 # List of apps that are browsers (need special handling for local files)
-BROWSER_APPS = {
-    'chrome.exe': 'Google Chrome',
-    'msedge.exe': 'Microsoft Edge',
-    'brave.exe': 'Brave Browser',
-    'firefox.exe': 'Mozilla Firefox',
-    'opera.exe': 'Opera'
-}
+if platform.system() == "Windows":
+    BROWSER_APPS = {
+        'chrome.exe': 'Google Chrome',
+        'msedge.exe': 'Microsoft Edge',
+        'brave.exe': 'Brave Browser',
+        'firefox.exe': 'Mozilla Firefox',
+        'opera.exe': 'Opera'
+    }
+else:
+    BROWSER_APPS = {
+        'chrome': 'Google Chrome',
+        'google-chrome': 'Google Chrome',
+        'msedge': 'Microsoft Edge',
+        'brave': 'Brave Browser',
+        'firefox': 'Mozilla Firefox',
+        'opera': 'Opera'
+    }
 
 # System/temp paths to ignore
-IGNORE_PATHS = [
-    "\\AppData\\Local\\Temp",
-    "\\Windows\\",
-    "\\System32\\",
-    "\\Program Files\\",
-    "\\ProgramData\\",
-    "\\$Recycle.Bin",
-    "\\.git",
-    "\\node_modules",
-    "\\venv\\",
-    "\\__pycache__",
+if platform.system() == "Windows":
+    IGNORE_PATHS = [
+        "\\AppData\\Local\\Temp",
+        "\\Windows\\",
+        "\\System32\\",
+        "\\Program Files\\",
+        "\\ProgramData\\",
+        "\\$Recycle.Bin",
+    ]
+else:
+    IGNORE_PATHS = [
+        "/tmp/",
+        "/var/tmp/",
+        "/proc/",
+        "/sys/",
+        "/dev/",
+        "/usr/lib/",
+    ]
+
+# Common ignore patterns
+IGNORE_PATHS += [
+    ".git",
+    "node_modules",
+    "venv",
+    "__pycache__",
 ]
 
 # File extensions we care about
@@ -125,21 +160,34 @@ def get_browser_local_file(browser_process_name, window_title):
     """
     try:
         history_db = None
-        user_data_dir = os.environ.get('LOCALAPPDATA', '')
+        if platform.system() == "Windows":
+            user_data_dir = os.environ.get('LOCALAPPDATA', '')
 
-        # Define paths to History DB based on browser
-        if browser_process_name == 'chrome.exe':
-            history_db = os.path.join(user_data_dir, 'Google', 'Chrome', 'User Data', 'Default', 'History')
-        elif browser_process_name == 'msedge.exe':
-            history_db = os.path.join(user_data_dir, 'Microsoft', 'Edge', 'User Data', 'Default', 'History')
-        elif browser_process_name == 'brave.exe':
-            history_db = os.path.join(user_data_dir, 'BraveSoftware', 'Brave-Browser', 'User Data', 'Default', 'History')
+            # Define paths to History DB based on browser
+            if browser_process_name == 'chrome.exe':
+                history_db = os.path.join(user_data_dir, 'Google', 'Chrome', 'User Data', 'Default', 'History')
+            elif browser_process_name == 'msedge.exe':
+                history_db = os.path.join(user_data_dir, 'Microsoft', 'Edge', 'User Data', 'Default', 'History')
+            elif browser_process_name == 'brave.exe':
+                history_db = os.path.join(user_data_dir, 'BraveSoftware', 'Brave-Browser', 'User Data', 'Default', 'History')
+        else:
+            # Linux paths
+            if 'chrome' in browser_process_name:
+                history_db = os.path.expanduser('~/.config/google-chrome/Default/History')
+            elif 'msedge' in browser_process_name:
+                history_db = os.path.expanduser('~/.config/microsoft-edge/Default/History')
+            elif 'brave' in browser_process_name:
+                history_db = os.path.expanduser('~/.config/BraveSoftware/Brave-Browser/Default/History')
+            elif 'firefox' in browser_process_name:
+                # Firefox is trickier because of profile names, but activity.py handles it.
+                # For brevity here, we skip or use a simple heuristic if needed.
+                pass
         
         if not history_db or not os.path.exists(history_db):
             return None
 
         # Copy DB to temp to avoid locking issues
-        temp_db = os.path.join(os.environ.get('TEMP', ''), 'tracker_history_temp.db')
+        temp_db = os.path.join(tempfile.gettempdir(), 'tracker_history_temp.db')
         try:
             shutil.copy2(history_db, temp_db)
             
@@ -190,18 +238,33 @@ def get_browser_local_file(browser_process_name, window_title):
 def get_active_window_file():
     """Get file path from currently active window using multiple detection methods"""
     try:
-        # Get active window handle
-        hwnd = win32gui.GetForegroundWindow()
-        if not hwnd:
-            return None, None
-        
-        # Get window title
-        window_title = win32gui.GetWindowText(hwnd)
-        if not window_title:
-            return None, None
+        if platform.system() == "Windows" and HAS_WIN32:
+            # Get active window handle
+            hwnd = win32gui.GetForegroundWindow()
+            if not hwnd:
+                return None, None
             
-        # Get process ID
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            # Get window title
+            window_title = win32gui.GetWindowText(hwnd)
+            if not window_title:
+                return None, None
+                
+            # Get process ID
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+        else:
+            # Linux fallback (Basic process identification without window focus tracking)
+            # For a proper Linux implementation, we'd use something like xdotool if available.
+            # But for now, we'll try to find any process from BROWSER_APPS that's currently active.
+            # This is a simplification.
+            window_title = ""
+            pid = None
+            for p in psutil.process_iter(['pid', 'name']):
+                if p.info['name'].lower() in BROWSER_APPS:
+                    pid = p.info['pid']
+                    break
+            
+            if not pid:
+                return None, None
         
         # Get process info
         try:

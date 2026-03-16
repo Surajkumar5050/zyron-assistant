@@ -4,7 +4,7 @@ from .core.brain import process_command
 from .agents.system import execute_command
 
 # Import file tracker - it will auto-start when imported
-# import zyron.features.files.tracker as file_tracker
+import zyron_linux.features.files.tracker as file_tracker
 
 def main():
     print("⚡ ZYRON ONLINE: Say 'Hey Pikachu' to start...")
@@ -41,5 +41,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n⚡ System shutting down.")
         # Stop file tracking on shutdown
-        # file_tracker.stop_tracking()
+        file_tracker.stop_tracking()
         

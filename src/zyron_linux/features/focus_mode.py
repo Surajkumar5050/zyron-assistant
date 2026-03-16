@@ -173,8 +173,8 @@ def kill_process(proc_name):
 
 def check_and_block():
     """Main Enforcer Loop - Optimized for performance."""
-    import zyron.features.activity as activity_monitor
-    import zyron.features.browser_control as browser_control
+    import zyron_linux.features.activity as activity_monitor
+    import zyron_linux.features.browser_control as browser_control
     
     print("🛡️ Focus Mode Enforcer Started.")
     
